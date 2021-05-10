@@ -50,8 +50,8 @@ public class NameNodeService implements RpcNameNodeService, Sequencer {
 	private FileStore fileTree;
 	private ConcurrentHashMap<Long, AbstractNode> fileTable;	
 	private GCServer gcServer;
-	public ConcurrentHashMap<Long, Integer> TpList;
-	
+	public ConcurrentHashMap<Long, Integer> TpList= new ConcurrentHashMap();
+
 	public NameNodeService() throws IOException {
 		URI uri = URI.create(CrailConstants.NAMENODE_ADDRESS);
 		String query = uri.getRawQuery();
