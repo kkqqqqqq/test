@@ -50,7 +50,7 @@ public class NameNodeService implements RpcNameNodeService, Sequencer {
 	private FileStore fileTree;
 	private ConcurrentHashMap<Long, AbstractNode> fileTable;	
 	private GCServer gcServer;
-	public ConcurrentHashMap<Long, Integer> TpList= new ConcurrentHashMap();
+	//public ConcurrentHashMap<Long, Integer> TpList= new ConcurrentHashMap();
 
 	public NameNodeService() throws IOException {
 		URI uri = URI.create(CrailConstants.NAMENODE_ADDRESS);
@@ -618,15 +618,15 @@ public class NameNodeService implements RpcNameNodeService, Sequencer {
 		int tp= request.tp;
 		DataNodeInfo dnInfo=request.getInfo();
 		System.out.println("recieved a heartbeat tp ="+tp+"dnInfo"+dnInfo);
-		if(!TpList.containsKey(dnInfo.key())){
-			TpList.put(dnInfo.key(),tp);
+		if(!blockStore.TpList.containsKey(dnInfo.key())){
+			blockStore.TpList.put(dnInfo.key(),tp);
 			System.out.println("TpList puts a dnInfo:"+dnInfo.key());
 		}else{
-			TpList.replace(dnInfo.key(),tp);
+			blockStore.TpList.replace(dnInfo.key(),tp);
 			System.out.println("TpList replace:"+dnInfo.key()+":"+tp);
 		}
        // TpList.replace(dnInfo.key(),tp);
-		System.out.println("TpList:"+TpList);
+		System.out.println("TpList:"+blockStore.TpList);
 		return RpcErrors.ERR_OK;
 	}
 

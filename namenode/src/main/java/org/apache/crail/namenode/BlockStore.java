@@ -43,13 +43,13 @@ import java.io.FileOutputStream;
 
 public class BlockStore {
 	private static final Logger LOG = CrailUtils.getLogger();
-
+	public ConcurrentHashMap<Long, Integer> TpList=new ConcurrentHashMap<>();
 	private StorageClass[] storageClasses;
 	
 	public BlockStore(){
 		storageClasses = new StorageClass[CrailConstants.STORAGE_CLASSES]; 
 		for (int i = 0; i < CrailConstants.STORAGE_CLASSES; i++){
-			this.storageClasses[i] = new StorageClass(i);
+			this.storageClasses[i] = new StorageClass(i,TpList);
 		}		
 	}
 
@@ -205,12 +205,14 @@ class StorageClass {
 	private ConcurrentHashMap<Integer, DataNodeArray> affinitySets;
 	private DataNodeArray anySet;
 	private BlockSelection blockSelection;
-	public ArrayList<Integer> ThoughtputList = new ArrayList<>();
+	//public ArrayList<Integer> ThoughtputList = new ArrayList<>();
+	private ConcurrentHashMap<Long, Integer> TpList = new ConcurrentHashMap<>();
 
-	public StorageClass(int storageClass) {
+	public StorageClass(int storageClass,ConcurrentHashMap TpList) {
 		this.storageClass = storageClass;
 		this.membership = new ConcurrentHashMap<Long, DataNodeBlocks>();
 		this.affinitySets = new ConcurrentHashMap<Integer, DataNodeArray>();
+		this.TpList = TpList;
 		// select BLOCKSELECTION
 		if (CrailConstants.NAMENODE_BLOCKSELECTION.equalsIgnoreCase("weight")) {
 			this.blockSelection = new WeightBlockSelection();
@@ -432,14 +434,16 @@ class StorageClass {
 	public class WeightBlockSelection implements BlockSelection {
 		ArrayList<Integer> CapacityList = new ArrayList<Integer>();
 		ArrayList<Integer> WeightList = new ArrayList(membership.size());
-
+		ArrayList<Integer> ThroughputList = new ArrayList<>();
 		public WeightBlockSelection() {
-			LOG.info("WeightRR block selection");
-
-
+			LOG.info("WeightRR block selection initialized");
 			LOG.info("membership" + membership);
 			for (DataNodeBlocks datanode : membership.values()) {
 				CapacityList.add(datanode.getBlockCount());
+				LOG.info("Blockstore: CapacityList add. and  CapacityList is:"+CapacityList);
+				ThroughputList.add(TpList.get(datanode.key()));
+				LOG.info("Blockstore: ThroughputList add. and  ThroughputList is:"+ThroughputList);
+
 			}
 
 			for (int i = 0; i < membership.size(); i++) {
@@ -447,9 +451,9 @@ class StorageClass {
 			}
 
 			for (int i = 0; i < membership.size(); i++) {
-				if (ThoughtputList.get(i) != 0) {
-					WeightList.set(i, CapacityList.get(i) / ThoughtputList.get(i));
-				}
+			//	if (ThoughtputList.get(i) != 0) {
+			//		WeightList.set(i, CapacityList.get(i) / ThoughtputList.get(i));
+			//	}
 			}
 
 		}
@@ -511,9 +515,27 @@ class StorageClass {
 					long startTime = System.nanoTime();
 
 					if (CrailConstants.NAMENODE_BLOCKSELECTION.equalsIgnoreCase("weight")) {
+						LOG.info("blockstore 518 normal.");
+
+						/*
 						ArrayList SelectionList = blockSelection.getList();
 						for (int i = 0; i < membership.size(); i++) {
 							//for(int j=0;j<SelectionList.get(i);j++){
+						}
+						 */
+						int startIndex = blockSelection.getNext(size);
+						for (int i = 0; i < size; i++) {
+							int index = (startIndex + i) % size;
+
+
+							DataNodeBlocks anyDn = arrayList.get(index);
+							LOG.info(String.valueOf(index));
+							if (anyDn.isOnline() && !anyDn.isScheduleForRemoval()) {
+								block = anyDn.getFreeBlock();
+							}
+							if (block != null) {
+								break;
+							}
 						}
 					} else {
 						int startIndex = blockSelection.getNext(size);
