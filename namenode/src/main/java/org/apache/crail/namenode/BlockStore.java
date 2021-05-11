@@ -41,9 +41,12 @@ import javax.lang.model.element.NestingKind;
 import java.io.File;
 import java.io.FileOutputStream;
 
+//static  public ConcurrentHashMap<Long, Integer> TpList=new ConcurrentHashMap<>();
+
+
 public class BlockStore {
 	private static final Logger LOG = CrailUtils.getLogger();
-	public ConcurrentHashMap<Long, Integer> TpList=new ConcurrentHashMap<>();
+	static  public ConcurrentHashMap<Long, Integer> TpList=new ConcurrentHashMap<>();
 	private StorageClass[] storageClasses;
 	
 	public BlockStore(){
@@ -197,7 +200,7 @@ public class BlockStore {
 
 }
 
-class StorageClass {
+class StorageClass  {
 	private static final Logger LOG = CrailUtils.getLogger();
 
 	private int storageClass;
@@ -205,7 +208,6 @@ class StorageClass {
 	private ConcurrentHashMap<Integer, DataNodeArray> affinitySets;
 	private DataNodeArray anySet;
 	private BlockSelection blockSelection;
-	//public ArrayList<Integer> ThoughtputList = new ArrayList<>();
 	private ConcurrentHashMap<Long, Integer> TpList = new ConcurrentHashMap<>();
 
 	public StorageClass(int storageClass,ConcurrentHashMap TpList) {
@@ -375,6 +377,8 @@ class StorageClass {
 		int getNext(int size);
 
 		ArrayList getList();
+
+		void update();
 	}
 
 
@@ -395,6 +399,11 @@ class StorageClass {
 		public ArrayList getList() {
 			return null;
 		}
+
+		@Override
+		public void update() {
+
+		}
 	}
 
 
@@ -413,6 +422,11 @@ class StorageClass {
 		public ArrayList getList() {
 			return null;
 		}
+
+		@Override
+		public void update() {
+
+		}
 	}
 
 	public class SequentialBlockSelection implements BlockSelection {
@@ -429,6 +443,11 @@ class StorageClass {
 		public ArrayList getList() {
 			return null;
 		}
+
+		@Override
+		public void update() {
+
+		}
 	}
 
 	public class WeightBlockSelection implements BlockSelection {
@@ -436,30 +455,32 @@ class StorageClass {
 		ArrayList<Integer> WeightList = new ArrayList(membership.size());
 		ArrayList<Integer> ThroughputList = new ArrayList<>();
 		public WeightBlockSelection() {
-			LOG.info("WeightRR block selection initialized");
-			LOG.info("membership" + membership);
+			LOG.info("blockstore 439: WeightRR block selection initialized");
+		}
+		@Override
+		public void update() {
+			LOG.info("blockstore 462: TPlist:"+ TpList);
+		}
+		@Override
+		public int getNext(int size) {
+			LOG.info("blockstore 440: membership" + membership);
 			for (DataNodeBlocks datanode : membership.values()) {
 				CapacityList.add(datanode.getBlockCount());
 				LOG.info("Blockstore: CapacityList add. and  CapacityList is:"+CapacityList);
 				ThroughputList.add(TpList.get(datanode.key()));
 				LOG.info("Blockstore: ThroughputList add. and  ThroughputList is:"+ThroughputList);
-
 			}
 
 			for (int i = 0; i < membership.size(); i++) {
 				WeightList.add(1);
 			}
-
+			/*
 			for (int i = 0; i < membership.size(); i++) {
-			//	if (ThoughtputList.get(i) != 0) {
-			//		WeightList.set(i, CapacityList.get(i) / ThoughtputList.get(i));
-			//	}
+				//	if (ThoughtputList.get(i) != 0) {
+				//		WeightList.set(i, CapacityList.get(i) / ThoughtputList.get(i));
+				//	}
 			}
-
-		}
-
-		@Override
-		public int getNext(int size) {
+			*/
 			size = ThreadLocalRandom.current().nextInt(size);
 			return size;
 		}
@@ -468,6 +489,8 @@ class StorageClass {
 		public ArrayList getList() {
 			return this.WeightList;
 		}
+
+
 
 	}
 
@@ -516,13 +539,7 @@ class StorageClass {
 
 					if (CrailConstants.NAMENODE_BLOCKSELECTION.equalsIgnoreCase("weight")) {
 						LOG.info("blockstore 518 normal.");
-
-						/*
-						ArrayList SelectionList = blockSelection.getList();
-						for (int i = 0; i < membership.size(); i++) {
-							//for(int j=0;j<SelectionList.get(i);j++){
-						}
-						 */
+						blockSelection.update();
 						int startIndex = blockSelection.getNext(size);
 						for (int i = 0; i < size; i++) {
 							int index = (startIndex + i) % size;

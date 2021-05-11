@@ -207,12 +207,12 @@ public interface StorageServer extends Configurable, Runnable  {
 		}
 
 		while (server.isAlive()) {
-
-			NetUsage tp=new NetUsage();
-			int tpuse=  tp.get();
+			int test=0;
+			//NetUsage tp=new NetUsage();
+			//int tpuse=  tp.get();
 			//LOG.info("tpuse:"+tpuse);
-			rpcConnection.heartbeat(dnInfo,tpuse);
-
+			rpcConnection.heartbeat(dnInfo,test);
+			test++;
 			DataNodeStatistics stats = storageRpc.getDataNode();
 			long newCount = stats.getFreeBlockCount();
 			long serviceId = stats.getServiceId();
