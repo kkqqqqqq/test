@@ -48,7 +48,7 @@ public class BlockStore {
 	private static final Logger LOG = CrailUtils.getLogger();
 	static  public ConcurrentHashMap<Long, Integer> TpList=new ConcurrentHashMap<>();
 	private StorageClass[] storageClasses;
-	
+
 	public BlockStore(){
 		storageClasses = new StorageClass[CrailConstants.STORAGE_CLASSES]; 
 		for (int i = 0; i < CrailConstants.STORAGE_CLASSES; i++){
@@ -287,6 +287,7 @@ class StorageClass  {
 
 		// current == null, datanode not in set, adding it now
 		_addDataNode(dataNode);
+		blockSelection.update();
 
 		return RpcErrors.ERR_OK;
 
@@ -379,6 +380,8 @@ class StorageClass  {
 		ArrayList getList();
 
 		void update();
+
+
 	}
 
 
@@ -404,6 +407,8 @@ class StorageClass  {
 		public void update() {
 
 		}
+
+
 	}
 
 
@@ -427,6 +432,8 @@ class StorageClass  {
 		public void update() {
 
 		}
+
+
 	}
 
 	public class SequentialBlockSelection implements BlockSelection {
@@ -448,39 +455,58 @@ class StorageClass  {
 		public void update() {
 
 		}
+
+
 	}
 
 	public class WeightBlockSelection implements BlockSelection {
-		ArrayList<Integer> CapacityList = new ArrayList<Integer>();
-		ArrayList<Integer> WeightList = new ArrayList(membership.size());
-		ArrayList<Integer> ThroughputList = new ArrayList<>();
+		double k=0.5;
+		double sum=0.0;
+		ArrayList<Double> WeightList = new ArrayList(membership.size());
+		double[] probabilityList= new double[membership.size()];
+
 		public WeightBlockSelection() {
-			LOG.info("blockstore 439: WeightRR block selection initialized");
+			LOG.info("WeightBlockSelection 458: WeightRR block selection initialized");
+			LOG.info("WeightBlockSelection 459: membership" + membership);
+			int pos=0;
+			for (DataNodeBlocks datanode : membership.values()) {
+				double temp=(1 - k)*datanode.getBlockCount() /1024 + k * (100 - TpList.get(datanode.key()));
+				WeightList.set(pos, temp);
+				pos++;
+				sum+=temp;
+			}
+			for(int i=0;i<membership.size();i++){
+				probabilityList[i]=WeightList.get(i)/sum;
+			}
+			LOG.info("WeightBlockSelection: WeightList"+WeightList);
+			LOG.info("WeightBlockSelection: probabilityList"+probabilityList);
+			LOG.info("WeightBlockSelection: WeightRR block selection initialization finished");
 		}
 		@Override
 		public void update() {
-			LOG.info("blockstore 462: TPlist:"+ TpList);
+			LOG.info("blockselection update");
+			LOG.info("old WeightList"+WeightList);
+			LOG.info("old probablityList"+probabilityList);
+			int pos=0;
+			for (DataNodeBlocks datanode : membership.values()) {
+				double temp=(1 - k)*datanode.getBlockCount() /1024 + k * (100 - TpList.get(datanode.key()));
+				WeightList.set(pos, temp);
+				pos++;
+				sum+=temp;
+			}
+			for(int i=0;i<membership.size();i++){
+				probabilityList[i]=WeightList.get(i)/sum;
+			}
+			LOG.info("new WeightList"+WeightList);
+			LOG.info("new probablityList"+probabilityList);
+			LOG.info("blockselection update finished");
 		}
+
+
+
 		@Override
 		public int getNext(int size) {
-			LOG.info("blockstore 440: membership" + membership);
-			for (DataNodeBlocks datanode : membership.values()) {
-				CapacityList.add(datanode.getBlockCount());
-				LOG.info("Blockstore: CapacityList add. and  CapacityList is:"+CapacityList);
-				ThroughputList.add(TpList.get(datanode.key()));
-				LOG.info("Blockstore: ThroughputList add. and  ThroughputList is:"+ThroughputList);
-			}
 
-			for (int i = 0; i < membership.size(); i++) {
-				WeightList.add(1);
-			}
-			/*
-			for (int i = 0; i < membership.size(); i++) {
-				//	if (ThoughtputList.get(i) != 0) {
-				//		WeightList.set(i, CapacityList.get(i) / ThoughtputList.get(i));
-				//	}
-			}
-			*/
 			size = ThreadLocalRandom.current().nextInt(size);
 			return size;
 		}
@@ -538,9 +564,11 @@ class StorageClass  {
 					long startTime = System.nanoTime();
 
 					if (CrailConstants.NAMENODE_BLOCKSELECTION.equalsIgnoreCase("weight")) {
-						LOG.info("blockstore 518 normal.");
-						blockSelection.update();
+						//LOG.info("blockstore 518 normal.");
+						//blockSelection.update();
 						int startIndex = blockSelection.getNext(size);
+
+
 						for (int i = 0; i < size; i++) {
 							int index = (startIndex + i) % size;
 
