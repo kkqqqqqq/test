@@ -4,4 +4,5 @@ crail.cachelimit                  1073741824
 crail.storage.tcp.interface       eth0
 crail.storage.tcp.datapath        /dev/hugepages/data
 crail.storage.tcp.storagelimit    1073741824
+crail.namenode.blockselection     weight
 
