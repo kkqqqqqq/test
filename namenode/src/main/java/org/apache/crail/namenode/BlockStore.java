@@ -280,6 +280,7 @@ class StorageClass  {
 	}
 
 	short addDataNode(DataNodeBlocks dataNode) {
+		// 如果传入key对应的value已经存在，就返回存在的value，不进行替换。如果不存在，就添加key和value，返回null
 		DataNodeBlocks current = membership.putIfAbsent(dataNode.key(), dataNode);
 		if (current != null) {
 			return RpcErrors.ERR_DATANODE_NOT_REGISTERED;
@@ -287,7 +288,7 @@ class StorageClass  {
 
 		// current == null, datanode not in set, adding it now
 		_addDataNode(dataNode);
-		blockSelection.update();
+		if(membership.size()>0) blockSelection.update();
 
 		return RpcErrors.ERR_OK;
 
@@ -484,22 +485,27 @@ class StorageClass  {
 		}
 		@Override
 		public void update() {
-			LOG.info("blockselection update");
-			LOG.info("old WeightList"+WeightList);
-			LOG.info("old probablityList"+probabilityList);
-			int pos=0;
-			for (DataNodeBlocks datanode : membership.values()) {
-				double temp=(1 - k)*datanode.getBlockCount() /1024 + k * (100 - TpList.get(datanode.key()));
-				WeightList.set(pos, temp);
-				pos++;
-				sum+=temp;
+			if (membership.size() > 0) {
+				LOG.info("blockselection update");
+				LOG.info("old WeightList" + WeightList);
+				LOG.info("old probablityList" + probabilityList);
+				int pos = 0;
+
+				for (DataNodeBlocks datanode : membership.values()) {
+					double temp = (1 - k) * datanode.getBlockCount() / 1024 + k * (100 - TpList.get(datanode.key()));
+					WeightList.set(pos, temp);
+					pos++;
+					sum += temp;
+				}
+				for (int i = 0; i < membership.size(); i++) {
+					probabilityList[i] = WeightList.get(i) / sum;
+				}
+				LOG.info("new WeightList" + WeightList);
+				LOG.info("new probablityList" + probabilityList);
+				LOG.info("blockselection update finished");
+			}else{
+				LOG.info("first add datanode");
 			}
-			for(int i=0;i<membership.size();i++){
-				probabilityList[i]=WeightList.get(i)/sum;
-			}
-			LOG.info("new WeightList"+WeightList);
-			LOG.info("new probablityList"+probabilityList);
-			LOG.info("blockselection update finished");
 		}
 
 
