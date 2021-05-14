@@ -313,7 +313,7 @@ public interface StorageServer extends Configurable, Runnable  {
 				float interval = (float)(endTime - startTime)/1000;
 
 				float curRate = (float)(inSize2 - inSize1 + outSize2 - outSize1)*8/(1000000*interval);
-				netUsage = (int)( 100*curRate/TotalBandwidth);
+				netUsage = (int)( 100-100*curRate/TotalBandwidth);
 				//System.out.println("this node " + curRate + "Mbps");
 			    //System.out.println("usage " + netUsage);
 			}

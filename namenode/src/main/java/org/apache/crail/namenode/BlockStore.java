@@ -18,7 +18,6 @@
 
 package org.apache.crail.namenode;
 ///////////
-import java.io.FileNotFoundException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,7 +27,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import jdk.nashorn.internal.ir.Block;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import org.apache.crail.conf.CrailConstants;
 import org.apache.crail.metadata.BlockInfo;
 import org.apache.crail.metadata.DataNodeInfo;
@@ -36,10 +37,6 @@ import org.apache.crail.rpc.RpcErrors;
 import org.apache.crail.utils.AtomicIntegerModulo;
 import org.apache.crail.utils.CrailUtils;
 import org.slf4j.Logger;
-
-import javax.lang.model.element.NestingKind;
-import java.io.File;
-import java.io.FileOutputStream;
 
 //static  public ConcurrentHashMap<Long, Integer> TpList=new ConcurrentHashMap<>();
 
@@ -49,11 +46,14 @@ public class BlockStore {
 	static  public ConcurrentHashMap<Long, Integer> TpList=new ConcurrentHashMap<>();
 	private StorageClass[] storageClasses;
 
+
+
 	public BlockStore(){
-		storageClasses = new StorageClass[CrailConstants.STORAGE_CLASSES]; 
+		storageClasses = new StorageClass[CrailConstants.STORAGE_CLASSES];
 		for (int i = 0; i < CrailConstants.STORAGE_CLASSES; i++){
 			this.storageClasses[i] = new StorageClass(i,TpList);
-		}		
+		}
+
 	}
 
 	public short addBlock(NameNodeBlockInfo blockInfo) throws UnknownHostException {
@@ -89,7 +89,7 @@ public class BlockStore {
 				}
 			}
 		}
-		
+
 		return block;
 	}
 
@@ -209,15 +209,18 @@ class StorageClass  {
 	private DataNodeArray anySet;
 	private BlockSelection blockSelection;
 	private ConcurrentHashMap<Long, Integer> TpList = new ConcurrentHashMap<>();
+	double k=0.5;
+	private Timer mytimer = new Timer();
+    private UpdateTimer updatetimer=new UpdateTimer();
 
-	public StorageClass(int storageClass,ConcurrentHashMap TpList) {
+	public StorageClass(int storageClass,ConcurrentHashMap TpList ) {
 		this.storageClass = storageClass;
 		this.membership = new ConcurrentHashMap<Long, DataNodeBlocks>();
 		this.affinitySets = new ConcurrentHashMap<Integer, DataNodeArray>();
 		this.TpList = TpList;
 		// select BLOCKSELECTION
 		if (CrailConstants.NAMENODE_BLOCKSELECTION.equalsIgnoreCase("weight")) {
-			this.blockSelection = new WeightBlockSelection();
+			this.blockSelection = new WeightBlockSelection(k);
 		} else if (CrailConstants.NAMENODE_BLOCKSELECTION.equalsIgnoreCase("roundrobin")) {
 			this.blockSelection = new RoundRobinBlockSelection();
 		} else if (CrailConstants.NAMENODE_BLOCKSELECTION.equalsIgnoreCase("sequential")) {
@@ -226,6 +229,7 @@ class StorageClass  {
 			this.blockSelection = new RandomBlockSelection();
 		}
 		this.anySet = new DataNodeArray(blockSelection);
+		this.mytimer.scheduleAtFixedRate(updatetimer,0,2000);
 	}
 
 	public short updateRegion(BlockInfo region) {
@@ -280,7 +284,7 @@ class StorageClass  {
 	}
 
 	short addDataNode(DataNodeBlocks dataNode) {
-		// 如果传入key对应的value已经存在，就返回存在的value，不进行替换。如果不存在，就添加key和value，返回null
+
 		DataNodeBlocks current = membership.putIfAbsent(dataNode.key(), dataNode);
 		if (current != null) {
 			return RpcErrors.ERR_DATANODE_NOT_REGISTERED;
@@ -288,6 +292,7 @@ class StorageClass  {
 
 		// current == null, datanode not in set, adding it now
 		_addDataNode(dataNode);
+		TpList.put(dataNode.key(),0);
 		if(membership.size()>0) blockSelection.update();
 
 		return RpcErrors.ERR_OK;
@@ -319,7 +324,6 @@ class StorageClass  {
 			return RpcErrors.ERR_OK;
 		}
 	}
-
 
 	public long getTotalBlockCount() {
 		long capacity = 0;
@@ -374,15 +378,18 @@ class StorageClass  {
 	}
 
 
+	class UpdateTimer extends TimerTask{
+		@Override
+		public void run() {
+			LOG.info("************** This is updatetimer running!***********");
+			blockSelection.update();
+		}
+	}
+
 	//*********************************************************************
 	public static interface BlockSelection {
 		int getNext(int size);
-
-		ArrayList getList();
-
 		void update();
-
-
 	}
 
 
@@ -399,10 +406,6 @@ class StorageClass  {
 			return size = counter.getAndIncrement() % size;
 		}
 
-		@Override
-		public ArrayList getList() {
-			return null;
-		}
 
 		@Override
 		public void update() {
@@ -411,7 +414,6 @@ class StorageClass  {
 
 
 	}
-
 
 	private class RandomBlockSelection implements BlockSelection {
 		public RandomBlockSelection() {
@@ -424,10 +426,6 @@ class StorageClass  {
 			return size;
 		}
 
-		@Override
-		public ArrayList getList() {
-			return null;
-		}
 
 		@Override
 		public void update() {
@@ -447,10 +445,6 @@ class StorageClass  {
 			return 0;
 		}
 
-		@Override
-		public ArrayList getList() {
-			return null;
-		}
 
 		@Override
 		public void update() {
@@ -461,71 +455,103 @@ class StorageClass  {
 	}
 
 	public class WeightBlockSelection implements BlockSelection {
-		double k=0.5;
-		double sum=0.0;
-		ArrayList<Double> WeightList = new ArrayList(membership.size());
-		double[] probabilityList= new double[membership.size()];
+		double k;
+		ArrayList<Integer> capacity = new ArrayList();
+		ArrayList<Integer> throughput = new ArrayList();
 
-		public WeightBlockSelection() {
-			LOG.info("WeightBlockSelection 458: WeightRR block selection initialized");
-			LOG.info("WeightBlockSelection 459: membership" + membership);
-			int pos=0;
-			for (DataNodeBlocks datanode : membership.values()) {
-				double temp=(1 - k)*datanode.getBlockCount() /1024 + k * (100 - TpList.get(datanode.key()));
-				WeightList.set(pos, temp);
-				pos++;
-				sum+=temp;
-			}
-			for(int i=0;i<membership.size();i++){
-				probabilityList[i]=WeightList.get(i)/sum;
-			}
-			LOG.info("WeightBlockSelection: WeightList"+WeightList);
-			LOG.info("WeightBlockSelection: probabilityList"+probabilityList);
-			LOG.info("WeightBlockSelection: WeightRR block selection initialization finished");
+		ArrayList<Double> WeightList = new ArrayList();
+		ArrayList<Double> probabilityList = new ArrayList();
+
+		public WeightBlockSelection( double k) {
+			LOG.info("WeightBlockSelection 472: WeightRR block selection initialized");
+			LOG.info("WeightBlockSelection 473: membership" + membership);
+			LOG.info("TPlist" + TpList);
+			this.k=k;
 		}
+
+
 		@Override
 		public void update() {
-			if (membership.size() > 0) {
-				LOG.info("blockselection update");
-				LOG.info("old WeightList" + WeightList);
-				LOG.info("old probablityList" + probabilityList);
-				int pos = 0;
 
+			capacity.clear();
+			throughput.clear();
+			double sum=0.0;
+			int capa_sum=0;
+			int through_sum=0;
+			double mean;
+			double cap_variance = 0;
+			double  through_variance=0;
+			int cap;
+			int tp;
+			if (membership.size() > 0 && (!TpList.isEmpty())) {
+				int pos = 0;
+				WeightList.add(0.0);
+				probabilityList.add(0.0);
 				for (DataNodeBlocks datanode : membership.values()) {
-					double temp = (1 - k) * datanode.getBlockCount() / 1024 + k * (100 - TpList.get(datanode.key()));
+					cap=datanode.getBlockCount()/1024*100;
+					capacity.add(cap);
+					capa_sum += cap;
+					tp=TpList.get(datanode.key());
+					throughput.add(tp);
+					through_sum =through_sum+tp;
+					double temp = (1 - k) * cap+ k*tp;
 					WeightList.set(pos, temp);
 					pos++;
 					sum += temp;
 				}
 				for (int i = 0; i < membership.size(); i++) {
-					probabilityList[i] = WeightList.get(i) / sum;
+
+					if(i==0) {probabilityList.set(i,(WeightList.get(i))/ sum);}
+					else{
+						probabilityList.set(i,probabilityList.get(i-1)+(WeightList.get(i))/ sum);
+					}
 				}
-				LOG.info("new WeightList" + WeightList);
-				LOG.info("new probablityList" + probabilityList);
-				LOG.info("blockselection update finished");
+				//compute variance and modify k
+				mean=capa_sum/membership.size();
+				for (int i = 0; i < membership.size(); i++) {
+					cap_variance += Math.pow((capacity.get(i)-mean),2);
+					through_variance =through_variance+ Math.pow((throughput.get(i)-mean),2);
+				}
+
+				if(cap_variance>through_variance){
+					k=k-0.05;
+				}else{
+					k=k+0.05;
+				}
+
+				//tp
+
 			}else{
 				LOG.info("first add datanode");
 			}
 		}
 
-
-
 		@Override
 		public int getNext(int size) {
+			double ran = Math.random();
+			LOG.info("blockstore 526: the ran is"+ran);
+			int pos = 0;
+			LOG.info("blockstore 529:  membership.size():"+ membership.size());
+			for (int i = 0; i < membership.size(); i++) {
 
-			size = ThreadLocalRandom.current().nextInt(size);
-			return size;
+				if (ran > probabilityList.get(i)) {
+					i++;pos++;
+				} else {
+					break;
+				}
+			}
+			//size = ThreadLocalRandom.current().nextInt(size);
+			//return size;
+			LOG.info("blockstore 539: the pos is "+pos+" and doInfo is: "+membership);
+			return size-pos;
+
 		}
 
-		@Override
-		public ArrayList getList() {
-			return this.WeightList;
-		}
+
 
 
 
 	}
-
 
 	//****************************************************************************
 
@@ -568,16 +594,10 @@ class StorageClass  {
 				LOG.info("arrayList.size()=" + size);
 				if (size > 0) {
 					long startTime = System.nanoTime();
-
-					if (CrailConstants.NAMENODE_BLOCKSELECTION.equalsIgnoreCase("weight")) {
-						//LOG.info("blockstore 518 normal.");
-						//blockSelection.update();
-						int startIndex = blockSelection.getNext(size);
-
-
-						for (int i = 0; i < size; i++) {
+					//----------------------------------
+					int startIndex = blockSelection.getNext(size);
+					for (int i = 0; i < size; i++) {
 							int index = (startIndex + i) % size;
-
 
 							DataNodeBlocks anyDn = arrayList.get(index);
 							LOG.info(String.valueOf(index));
@@ -588,23 +608,6 @@ class StorageClass  {
 								break;
 							}
 						}
-					} else {
-						int startIndex = blockSelection.getNext(size);
-						for (int i = 0; i < size; i++) {
-							int index = (startIndex + i) % size;
-
-
-							DataNodeBlocks anyDn = arrayList.get(index);
-							LOG.info(String.valueOf(index));
-							if (anyDn.isOnline() && !anyDn.isScheduleForRemoval()) {
-								block = anyDn.getFreeBlock();
-							}
-							if (block != null) {
-								break;
-							}
-						}
-
-					}
 					//----------------------------------
 					long endTime = System.nanoTime();
 					long BlockSelectionTime = endTime - startTime;
@@ -612,7 +615,7 @@ class StorageClass  {
 					fStream.write((BlockSelectionTime + " ").getBytes());
 					//----------------------------------
 				}
-					return block;
+				return block;
 
 			} finally {
 				lock.readLock().unlock();
@@ -620,5 +623,11 @@ class StorageClass  {
 		}
 
 	}
+
+
+
 }
+
+
+
 
