@@ -6,8 +6,9 @@ import java.nio.ByteBuffer;
 public class HeartbeatResult {
 
     public static final int CSIZE = 8;
-    int  cpuUsage;
-    int  netUsage;
+
+    public int  cpuUsage;
+    public int  netUsage;
     public HeartbeatResult(){
         this.cpuUsage = 0;
         this.netUsage = 0;

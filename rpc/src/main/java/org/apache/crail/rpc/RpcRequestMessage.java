@@ -728,7 +728,8 @@ public class RpcRequestMessage {
 			int size = size();
 			checkSize(buffer.remaining());
 			dnInfo.write(buffer);
-			heart.update(buffer);
+			buffer.putInt(heart.getCpuUsage());
+			buffer.putInt(heart.getNetUsage());
 			return size;
 		}
 		private void checkSize(int remaining) throws IOException {
@@ -740,7 +741,9 @@ public class RpcRequestMessage {
 		public void update(ByteBuffer buffer) throws IOException {
 			checkSize(buffer.remaining());
 			dnInfo.update(buffer);
-			heart.update(buffer);
+			//heart.update(buffer);
+			this.heart.cpuUsage=buffer.getInt();
+			this.heart.netUsage=buffer.getInt();
 		}
 		public DataNodeInfo getInfo(){
 			return this.dnInfo;
