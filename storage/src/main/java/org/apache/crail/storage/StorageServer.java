@@ -261,56 +261,44 @@ public interface StorageServer extends Configurable, Runnable  {
 		return INSTANCE;
 	}
 	public HeartbeatResult get() {
-		// LOG.info("begin get tp");
-
 		int netUsage = 0;
 		int cpuUsage = 0;
-		Process pro1,pro2,pro3,pro4;
+		Process net_pro1,net_pro2,cpu_pro1,cpu_pro2;
 		Runtime r = Runtime.getRuntime();
 		try {
 			String command1 = "cat /proc/net/dev";
 			long tpstartTime = System.currentTimeMillis();
-			pro1 = r.exec(command1);
+			net_pro1 = r.exec(command1);
 
-			String command2 = "cat /proc/stat";
-			long cpustartTime = System.currentTimeMillis();
-			pro3 = r.exec(command2);
+			//first netuse
+			BufferedReader net_in1 = new BufferedReader(new InputStreamReader(net_pro1.getInputStream()));
 
-			BufferedReader in1 = new BufferedReader(new InputStreamReader(pro1.getInputStream()));
-			BufferedReader in3 = new BufferedReader(new InputStreamReader(pro3.getInputStream()));
-
-			String line = null;
+			String net_line = null;
 			long inSize1 = 0, outSize1 = 0;
-			while((line=in1.readLine()) != null){
-				line = line.trim();
-				if(line.startsWith("ens5")){
+			while((net_line=net_in1.readLine()) != null){
+				net_line = net_line.trim();
+				if(net_line.startsWith("ens5")){
 					//System.out.println(line);
-					String[] temp = line.split("\\s+");
-					//System.out.println("temp: "+temp.length+"temp[0]="+temp[0]);
-
+					String[] temp = net_line.split("\\s+");
 					inSize1 = Long.parseLong(temp[1]); //Receive bytes
 					outSize1 = Long.parseLong(temp[9]);             //Transmit bytes
 					break;
 				}
 			}
-			in1.close();
-			pro1.destroy();
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
-				System.out.println("NetUsage  InterruptedException. " + e.getMessage());
-				System.out.println(sw.toString());
-			}
+			net_in1.close();
+			net_pro1.destroy();
 
-			String line2 = null;
+			//forst cpu use
+			String command2 = "cat /proc/stat";
+			cpu_pro1 = r.exec(command2);
+			BufferedReader cpu_in1 = new BufferedReader(new InputStreamReader(cpu_pro1.getInputStream()));
+			String cpu_line = null;
 			long idleCpuTime1 = 0, totalCpuTime1 = 0;
-			while((line=in1.readLine()) != null){
-				if(line.startsWith("cpu")){
-					line = line.trim();
-					String[] temp = line.split("\\s+");
-					idleCpuTime1 = Long.parseLong(temp[4]);
+			while((cpu_line=cpu_in1.readLine()) != null){
+				if(cpu_line.startsWith("cpu")){
+					cpu_line = cpu_line.trim();
+					String[] temp = cpu_line.split("\\s+");
+					idleCpuTime1 = Long.parseLong(temp[5]);
 					for(String s : temp){
 						if(!s.equals("cpu")){
 							totalCpuTime1 += Long.parseLong(s);
@@ -320,50 +308,57 @@ public interface StorageServer extends Configurable, Runnable  {
 					break;
 				}
 			}
-			in1.close();
-			pro1.destroy();
-			in3.close();
-			pro3.destroy();
+			cpu_in1.close();
+			cpu_pro1.destroy();
 
 
+
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				System.out.println("heart sleep " + e.getMessage());
+				System.out.println(sw.toString());
+			}
+
+			//second net
 			long tpendTime = System.currentTimeMillis();
-			pro2 = r.exec(command1);
-			BufferedReader in2 = new BufferedReader(new InputStreamReader(pro2.getInputStream()));
+			net_pro2 = r.exec(command1);
+			BufferedReader net_in2 = new BufferedReader(new InputStreamReader(net_pro2.getInputStream()));
 			long inSize2 = 0 ,outSize2 = 0;
-			while((line=in2.readLine()) != null){
-				line = line.trim();
-				if(line.startsWith("ens5")){
+			while((net_line=net_in2.readLine()) != null){
+				net_line = net_line.trim();
+				if(net_line.startsWith("ens5")){
 					//System.out.println(line);
-					String[] temp = line.split("\\s+");
-
+					String[] temp = net_line.split("\\s+");
 					inSize2 = Long.parseLong(temp[1]);
 					outSize2 = Long.parseLong(temp[9]);
 					break;
 				}
 			}
-
+			//compute
 			if(inSize1 != 0 && outSize1 !=0 && inSize2 != 0 && outSize2 !=0){
 				float interval = (float)(tpendTime - tpstartTime)/1000;
-
 				float curRate = (float)(inSize2 - inSize1 + outSize2 - outSize1)*8/(1000000*interval);
 				netUsage = (int)( 100-100*curRate/TotalBandwidth);
 
 
 			}
-			in2.close();
-			pro2.destroy();
+			net_in2.close();
+			net_pro2.destroy();
 
 
-			long cpuendTime = System.currentTimeMillis();
-			pro4 = r.exec(command2);
-			BufferedReader in4 = new BufferedReader(new InputStreamReader(pro4.getInputStream()));
+			//long cpuendTime = System.currentTimeMillis();
+			cpu_pro2 = r.exec(command2);
+			BufferedReader cpu_in2 = new BufferedReader(new InputStreamReader(cpu_pro2.getInputStream()));
 			long idleCpuTime2 = 0, totalCpuTime2 = 0;
-			while((line=in4.readLine()) != null){
-				if(line.startsWith("cpu")){
-					line = line.trim();
-					LOG.info(line);
-					String[] temp = line.split("\\s+");
-					idleCpuTime2 = Long.parseLong(temp[4]);
+			while((cpu_line=cpu_in2.readLine()) != null){
+				if(cpu_line.startsWith("cpu")){
+					cpu_line = cpu_line.trim();
+					LOG.info(cpu_line);
+					String[] temp = cpu_line.split("\\s+");
+					idleCpuTime2 = Long.parseLong(temp[5]);
 					for(String s : temp){
 						if(!s.equals("cpu")){
 							totalCpuTime2 += Long.parseLong(s);
@@ -374,18 +369,13 @@ public interface StorageServer extends Configurable, Runnable  {
 				}
 			}
 
-
-
 			if(idleCpuTime1 != 0 && totalCpuTime1 !=0 && idleCpuTime2 != 0 && totalCpuTime2 !=0){
-				cpuUsage = (int)(100 - 100*(idleCpuTime2 - idleCpuTime1)/(float)(totalCpuTime2 - totalCpuTime1));
+				//this is unused
+				cpuUsage = (int)(100*(idleCpuTime2 - idleCpuTime1)/(float)(totalCpuTime2 - totalCpuTime1));
 				LOG.info("this node cpu usage: " + cpuUsage);
 			}
-			in2.close();
-			pro2.destroy();
-
-	in4.close();
-			pro4.destroy();
-
+			cpu_in2.close();
+			cpu_pro2.destroy();
 
 		} catch (IOException e) {
 			StringWriter sw = new StringWriter();
