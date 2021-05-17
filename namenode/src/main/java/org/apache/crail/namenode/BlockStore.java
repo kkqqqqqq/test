@@ -525,7 +525,7 @@ class StorageClass  {
 				LOG.info("means:"+mean1+mean2+mean3);
 				for (int i = 0; i < membership.size(); i++) {
 					cap_variance += Math.pow((capacity.get(i)-mean1),2);
-					
+
 					through_variance += Math.pow((throughput.get(i)-mean2),2);
 					LOG.info("cpu_variance:"+cpu_variance+"cpuuse.get(i)"+cpuuse.get(i)+"mean3"+mean3);
 					cpu_variance += Math.pow((cpuuse.get(i)-mean3),2);
@@ -535,22 +535,19 @@ class StorageClass  {
 
 				if(cap_variance>through_variance){
 					if(through_variance>=cpu_variance){
-						if(w[0]<=0.6){
-						w[0]+=0.1;w[1]-=0.05;w[2]-=0.05;
+						if(w[0]<=0.6){ w[0]+=0.1;w[1]-=0.05;w[2]-=0.05;}
 					}
 					else if(cap_variance<cpu_variance){
-							if(w[1]<=0.6){
-								w[1]+=0.1;w[0]-=0.05;w[2]-=0.05;
-							}
-						}
+							if(w[1]<=0.6){w[1]+=0.1;w[0]-=0.05;w[2]-=0.05; }
 					}
-					}
-
-				}else if(through_variance>=cpu_variance){
-					if(w[2]<=0.6){
-						w[2]+=0.1;w[0]-=0.05;w[1]-=0.05;
 				}
-
+				else if(through_variance>=cpu_variance) {
+					if (w[2] <= 0.6) {
+						w[2] += 0.1;
+						w[0] -= 0.05;
+						w[1] -= 0.05;
+					}
+				}
 
 				LOG.info("w:"+w[0]+" "+w[1]+" "+w[2]);
 
