@@ -708,6 +708,7 @@ public class RpcRequestMessage {
 		public HeartbeatReq(DataNodeInfo dnInfo, HeartbeatResult heart) {
 			this.dnInfo=dnInfo;
 			this.heart = heart;
+			System.out.println(" init a heart "+heart);
 		}
 		@Override
 		public short getType() {
@@ -728,12 +729,13 @@ public class RpcRequestMessage {
 			int size = size();
 			checkSize(buffer.remaining());
 			dnInfo.write(buffer);
-			buffer.putInt(heart.getCpuUsage());
-			buffer.putInt(heart.getNetUsage());
+			heart.write(buffer);
+		//	buffer.putInt(heart.getCpuUsage());
+		//	buffer.putInt(heart.getNetUsage());
 			return size;
 		}
 		private void checkSize(int remaining) throws IOException {
-			//System.out.println(" remaining bytes in buffer"+remaining);
+			System.out.println(" remaining bytes in buffer"+remaining);
 			if (this.size() > remaining)
 				throw new IOException("Only " + remaining + " remaining bytes stored in buffer, however " + this.size() + " bytes are required");
 		}
@@ -741,9 +743,9 @@ public class RpcRequestMessage {
 		public void update(ByteBuffer buffer) throws IOException {
 			checkSize(buffer.remaining());
 			dnInfo.update(buffer);
-			//heart.update(buffer);
-			this.heart.cpuUsage=buffer.getInt();
-			this.heart.netUsage=buffer.getInt();
+			heart.update(buffer);
+			//heart.cpuUsage=buffer.getInt();
+			//heart.netUsage=buffer.getInt();
 		}
 		public DataNodeInfo getInfo(){
 			return this.dnInfo;
