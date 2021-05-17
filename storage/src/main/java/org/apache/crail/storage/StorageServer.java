@@ -207,8 +207,11 @@ public interface StorageServer extends Configurable, Runnable  {
 		while (server.isAlive()) {
 			//int test=0;
 			HeartUsage heartUsage =new HeartUsage();
+			long heartstartTime = System.currentTimeMillis();
 			HeartbeatResult heart=  heartUsage.get();
-			//LOG.info("tpuse:"+tpuse);
+			long heartendTime = System.currentTimeMillis();
+			long hearttime=heartendTime-heartstartTime;
+			LOG.info("time of heart computing: "+hearttime);
 			//rpcConnection.heartbeat(dnInfo,test);
 			HeartbeatResult test=new HeartbeatResult(10,10);
 			LOG.info("test heart:"+test);
