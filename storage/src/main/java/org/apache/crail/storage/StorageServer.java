@@ -214,8 +214,8 @@ public interface StorageServer extends Configurable, Runnable  {
 			LOG.info("time of heart computing: "+hearttime);
 			//rpcConnection.heartbeat(dnInfo,test);
 			HeartbeatResult test=new HeartbeatResult(10,10);
-			LOG.info("test heart:"+test);
-			LOG.info("test heart:"+test.getCpuUsage()+test.getCpuUsage());
+			//LOG.info("test heart:"+test);
+			//LOG.info("test heart:"+test.getCpuUsage()+test.getCpuUsage());
 			rpcConnection.heartbeat(dnInfo,test);
 			//test++;
 			DataNodeStatistics stats = storageRpc.getDataNode();
@@ -260,9 +260,7 @@ public interface StorageServer extends Configurable, Runnable  {
 	private static HeartUsage INSTANCE = new HeartUsage();
 	private final static float TotalBandwidth = 5000;
 	 HeartUsage(){}
-	public static HeartUsage getInstance(){
-		return INSTANCE;
-	}
+
 	public HeartbeatResult get() {
 		int netUsage = 0;
 		int cpuUsage = 0;
@@ -367,7 +365,7 @@ public interface StorageServer extends Configurable, Runnable  {
 							totalCpuTime2 += Long.parseLong(s);
 						}
 					}
-					LOG.info("IdleCpuTime: " + idleCpuTime2 + ", " + "TotalCpuTime" + totalCpuTime2);
+					//LOG.info("IdleCpuTime: " + idleCpuTime2 + ", " + "TotalCpuTime" + totalCpuTime2);
 					break;
 				}
 			}
@@ -375,7 +373,7 @@ public interface StorageServer extends Configurable, Runnable  {
 			if(idleCpuTime1 != 0 && totalCpuTime1 !=0 && idleCpuTime2 != 0 && totalCpuTime2 !=0){
 				//this is unused
 				cpuUsage = (int)(100*(idleCpuTime2 - idleCpuTime1)/(float)(totalCpuTime2 - totalCpuTime1));
-				LOG.info("this node cpu usage: " + cpuUsage);
+				//LOG.info("this node cpu usage: " + cpuUsage);
 			}
 			cpu_in2.close();
 			cpu_pro2.destroy();
