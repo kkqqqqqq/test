@@ -727,11 +727,10 @@ public class RpcRequestMessage {
 
 		public int write(ByteBuffer buffer) throws IOException {
 			int size = size();
-			checkSize(buffer.remaining());
+
 			dnInfo.write(buffer);
 			heart.write(buffer);
-		//	buffer.putInt(heart.getCpuUsage());
-		//	buffer.putInt(heart.getNetUsage());
+			System.out.println(" heartbeat write succeed");
 			return size;
 		}
 		private void checkSize(int remaining) throws IOException {
@@ -743,6 +742,7 @@ public class RpcRequestMessage {
 		public void update(ByteBuffer buffer) throws IOException {
 			checkSize(buffer.remaining());
 			dnInfo.update(buffer);
+			System.out.println("dnInfo.update(buffer) suscceed ");
 			heart.update(buffer);
 			//heart.cpuUsage=buffer.getInt();
 			//heart.netUsage=buffer.getInt();

@@ -213,7 +213,8 @@ public interface StorageServer extends Configurable, Runnable  {
 			HeartbeatResult heart=  heartUsage.get();
 			//LOG.info("tpuse:"+tpuse);
 			//rpcConnection.heartbeat(dnInfo,test);
-			rpcConnection.heartbeat(dnInfo,heart);
+			HeartbeatResult test=new HeartbeatResult(10,10);
+			rpcConnection.heartbeat(dnInfo,test);
 			//test++;
 			DataNodeStatistics stats = storageRpc.getDataNode();
 			long newCount = stats.getFreeBlockCount();
