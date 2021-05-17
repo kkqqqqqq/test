@@ -474,6 +474,7 @@ class StorageClass  {
 
 			capacity.clear();
 			throughput.clear();
+			cpuuse.clear();
 			double sum=0.0;
 			double capa_sum=0;
 			double through_sum=0;
@@ -524,6 +525,7 @@ class StorageClass  {
 				LOG.info("means:"+mean1+mean2+mean3);
 				for (int i = 0; i < membership.size(); i++) {
 					cap_variance += Math.pow((capacity.get(i)-mean1),2);
+					
 					through_variance += Math.pow((throughput.get(i)-mean2),2);
 					LOG.info("cpu_variance:"+cpu_variance+"cpuuse.get(i)"+cpuuse.get(i)+"mean3"+mean3);
 					cpu_variance += Math.pow((cpuuse.get(i)-mean3),2);
