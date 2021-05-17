@@ -704,12 +704,11 @@ public class RpcRequestMessage {
 		public HeartbeatReq() {
 			this.dnInfo = new DataNodeInfo();
 			this.heart=new HeartbeatResult();
-			//	this.tp = 0;
 				}
 		public HeartbeatReq(DataNodeInfo dnInfo, HeartbeatResult heart) {
 			this.dnInfo=dnInfo;
 			this.heart = heart;
-			System.out.println(" init a heart "+heart);
+			//System.out.println(" init a heart "+heart);
 		}
 		@Override
 		public short getType() {
@@ -731,11 +730,11 @@ public class RpcRequestMessage {
 
 			dnInfo.write(buffer);
 			heart.write(buffer);
-			System.out.println(" heartbeat write succeed");
+			//System.out.println(" heartbeat write succeed");
 			return size;
 		}
 		private void checkSize(int remaining) throws IOException {
-			System.out.println(" remaining bytes in buffer"+remaining);
+			//System.out.println(" remaining bytes in buffer"+remaining);
 			if (this.size() > remaining)
 				throw new IOException("Only " + remaining + " remaining bytes stored in buffer, however " + this.size() + " bytes are required");
 		}
