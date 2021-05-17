@@ -210,7 +210,7 @@ class StorageClass  {
 	private DataNodeArray anySet;
 	private BlockSelection blockSelection;
 	private ConcurrentHashMap<Long, HeartbeatResult> HeartList = new ConcurrentHashMap<Long, HeartbeatResult>();
-	double[] w={1/3,1/3,1/3};
+	double[] w={0.33,0.33,0.33};
 	private Timer mytimer = new Timer();
 	private UpdateTimer updatetimer=new UpdateTimer();
 
@@ -475,9 +475,9 @@ class StorageClass  {
 			capacity.clear();
 			throughput.clear();
 			double sum=0.0;
-			int capa_sum=0;
-			int through_sum=0;
-			int cpu_sum=0;
+			double capa_sum=0;
+			double through_sum=0;
+			double cpu_sum=0;
 			double mean1;
 			double mean2;
 			double mean3;
@@ -525,6 +525,7 @@ class StorageClass  {
 				for (int i = 0; i < membership.size(); i++) {
 					cap_variance += Math.pow((capacity.get(i)-mean1),2);
 					through_variance += Math.pow((throughput.get(i)-mean2),2);
+					LOG.info("cpu_variance:"+cpu_variance+"cpuuse.get(i)"+cpuuse.get(i)+"mean3"+mean3);
 					cpu_variance += Math.pow((cpuuse.get(i)-mean3),2);
 				}
 
