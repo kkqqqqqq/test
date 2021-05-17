@@ -33,6 +33,7 @@ import java.util.TimerTask;
 import org.apache.crail.conf.CrailConstants;
 import org.apache.crail.metadata.BlockInfo;
 import org.apache.crail.metadata.DataNodeInfo;
+import org.apache.crail.metadata.HeartbeatResult;
 import org.apache.crail.rpc.RpcErrors;
 import org.apache.crail.utils.AtomicIntegerModulo;
 import org.apache.crail.utils.CrailUtils;
@@ -43,7 +44,7 @@ import org.slf4j.Logger;
 
 public class BlockStore {
 	private static final Logger LOG = CrailUtils.getLogger();
-	static  public ConcurrentHashMap<Long, Integer> TpList=new ConcurrentHashMap<>();
+	static  public ConcurrentHashMap<Long, HeartbeatResult>HeartList=new ConcurrentHashMap<Long, org.apache.crail.metadata.HeartbeatResult>();
 	private StorageClass[] storageClasses;
 
 
@@ -51,7 +52,7 @@ public class BlockStore {
 	public BlockStore(){
 		storageClasses = new StorageClass[CrailConstants.STORAGE_CLASSES];
 		for (int i = 0; i < CrailConstants.STORAGE_CLASSES; i++){
-			this.storageClasses[i] = new StorageClass(i,TpList);
+			this.storageClasses[i] = new StorageClass(i,HeartList);
 		}
 
 	}
@@ -208,19 +209,19 @@ class StorageClass  {
 	private ConcurrentHashMap<Integer, DataNodeArray> affinitySets;
 	private DataNodeArray anySet;
 	private BlockSelection blockSelection;
-	private ConcurrentHashMap<Long, Integer> TpList = new ConcurrentHashMap<>();
-	double k=0.5;
+	private ConcurrentHashMap<Long, HeartbeatResult> HeartList = new ConcurrentHashMap<Long, HeartbeatResult>();
+	double w[]={1/3,1/3,1/3};
 	private Timer mytimer = new Timer();
-    private UpdateTimer updatetimer=new UpdateTimer();
+	private UpdateTimer updatetimer=new UpdateTimer();
 
-	public StorageClass(int storageClass,ConcurrentHashMap TpList ) {
+	public StorageClass(int storageClass,ConcurrentHashMap HeartList ) {
 		this.storageClass = storageClass;
 		this.membership = new ConcurrentHashMap<Long, DataNodeBlocks>();
 		this.affinitySets = new ConcurrentHashMap<Integer, DataNodeArray>();
-		this.TpList = TpList;
+		this.HeartList = HeartList;
 		// select BLOCKSELECTION
 		if (CrailConstants.NAMENODE_BLOCKSELECTION.equalsIgnoreCase("weight")) {
-			this.blockSelection = new WeightBlockSelection(k);
+			this.blockSelection = new WeightBlockSelection(w);
 		} else if (CrailConstants.NAMENODE_BLOCKSELECTION.equalsIgnoreCase("roundrobin")) {
 			this.blockSelection = new RoundRobinBlockSelection();
 		} else if (CrailConstants.NAMENODE_BLOCKSELECTION.equalsIgnoreCase("sequential")) {
@@ -292,7 +293,7 @@ class StorageClass  {
 
 		// current == null, datanode not in set, adding it now
 		_addDataNode(dataNode);
-		TpList.put(dataNode.key(),0);
+		HeartList.put(dataNode.key(), new HeartbeatResult(0,0));
 		if(membership.size()>0) blockSelection.update();
 
 		return RpcErrors.ERR_OK;
@@ -455,18 +456,18 @@ class StorageClass  {
 	}
 
 	public class WeightBlockSelection implements BlockSelection {
-		double k;
+		double w[];
 		ArrayList<Integer> capacity = new ArrayList();
 		ArrayList<Integer> throughput = new ArrayList();
-
+		ArrayList<Integer> cpuuse = new ArrayList();
 		ArrayList<Double> WeightList = new ArrayList();
 		ArrayList<Double> probabilityList = new ArrayList();
 
-		public WeightBlockSelection( double k) {
-			LOG.info("WeightBlockSelection 472: WeightRR block selection initialized");
-			LOG.info("WeightBlockSelection 473: membership" + membership);
-			LOG.info("TPlist" + TpList);
-			this.k=k;
+		public WeightBlockSelection( double w[]) {
+			//LOG.info("WeightBlockSelection 472: WeightRR block selection initialized");
+			//LOG.info("WeightBlockSelection 473: membership" + membership);
+			//LOG.info("TPlist" + TpList);
+			this.w=w;
 		}
 
 
@@ -478,12 +479,17 @@ class StorageClass  {
 			double sum=0.0;
 			int capa_sum=0;
 			int through_sum=0;
-			double mean;
+			int cpu_sum=0;
+			double mean1;
+			double mean2;
+			double mean3;
 			double cap_variance = 0;
 			double  through_variance=0;
+			double  cpu_variance=0;
 			int cap;
 			int tp;
-			if (membership.size() > 0 && (!TpList.isEmpty())) {
+			int cpu;
+			if (membership.size() > 0 && (!HeartList.isEmpty())) {
 				int pos = 0;
 				WeightList.add(0.0);
 				probabilityList.add(0.0);
@@ -491,10 +497,16 @@ class StorageClass  {
 					cap=datanode.getBlockCount()/1024*100;
 					capacity.add(cap);
 					capa_sum += cap;
-					tp=TpList.get(datanode.key());
+
+					tp=HeartList.get(datanode.key()).getNetUsage();
 					throughput.add(tp);
 					through_sum =through_sum+tp;
-					double temp = (1 - k) * cap+ k*tp;
+
+					cpu=HeartList.get(datanode.key()).getCpuUsage();
+					cpuuse.add(cpu);
+					cpu_sum += cpu;
+
+					double temp = w[0]* cap+ w[1]*cpu+w[2]*tp;
 					WeightList.set(pos, temp);
 					pos++;
 					sum += temp;
@@ -507,18 +519,37 @@ class StorageClass  {
 					}
 				}
 				//compute variance and modify k
-				mean=capa_sum/membership.size();
+				mean1=capa_sum/membership.size();
+				mean2=through_sum/membership.size();
+				mean3=cpu_sum/membership.size();
 				for (int i = 0; i < membership.size(); i++) {
-					cap_variance += Math.pow((capacity.get(i)-mean),2);
-					through_variance =through_variance+ Math.pow((throughput.get(i)-mean),2);
+					cap_variance += Math.pow((capacity.get(i)-mean1),2);
+					through_variance += Math.pow((throughput.get(i)-mean2),2);
+					cpu_variance += Math.pow((cpuuse.get(i)-mean3),2);
 				}
 
 				if(cap_variance>through_variance){
-					k=k-0.05;
-				}else{
-					k=k+0.05;
+					if(through_variance>=cpu_variance){
+						if(w[0]<=0.6){
+						w[0]+=0.1;w[1]-=0.05;w[2]-=0.05;
+					}
+					else if(cap_variance<cpu_variance){
+							if(w[1]<=0.6){
+								w[1]+=0.1;w[0]-=0.05;w[3]-=0.05;
+							}
+						}
+					}
+					}
+
+				}else if(through_variance>=cpu_variance){
+					if(w[3]<=0.6){
+						w[3]+=0.1;w[0]-=0.05;w[1]-=0.05;
 				}
 
+
+
+				LOG.info("cap_variance:"+cap_variance+"through_variance:"+through_variance+"cpu_variance"+cpu_variance);
+				LOG.info("w:"+w);
 				//tp
 
 			}else{
@@ -597,17 +628,17 @@ class StorageClass  {
 					//----------------------------------
 					int startIndex = blockSelection.getNext(size);
 					for (int i = 0; i < size; i++) {
-							int index = (startIndex + i) % size;
+						int index = (startIndex + i) % size;
 
-							DataNodeBlocks anyDn = arrayList.get(index);
-							LOG.info(String.valueOf(index));
-							if (anyDn.isOnline() && !anyDn.isScheduleForRemoval()) {
-								block = anyDn.getFreeBlock();
-							}
-							if (block != null) {
-								break;
-							}
+						DataNodeBlocks anyDn = arrayList.get(index);
+						LOG.info(String.valueOf(index));
+						if (anyDn.isOnline() && !anyDn.isScheduleForRemoval()) {
+							block = anyDn.getFreeBlock();
 						}
+						if (block != null) {
+							break;
+						}
+					}
 					//----------------------------------
 					long endTime = System.nanoTime();
 					long BlockSelectionTime = endTime - startTime;
@@ -627,6 +658,9 @@ class StorageClass  {
 
 
 }
+
+
+
 
 
 

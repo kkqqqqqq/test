@@ -615,18 +615,18 @@ public class NameNodeService implements RpcNameNodeService, Sequencer {
 
 	@Override
 	public short heartbeat(RpcRequestMessage.HeartbeatReq request, RpcResponseMessage.HeartbeatRes response, RpcNameNodeState errorState) throws Exception {
-		int tp= request.tp;
+		HeartbeatResult heart= request.getHeart();
 		DataNodeInfo dnInfo=request.getInfo();
-		System.out.println("recieved a heartbeat tp ="+tp+"dnInfo"+dnInfo);
-		if(!blockStore.TpList.containsKey(dnInfo.key())){
-			blockStore.TpList.put(dnInfo.key(),tp);
+		System.out.println("recieved a heartbeat  ="+heart);
+		if(!blockStore.HeartList.containsKey(dnInfo.key())){
+			blockStore.HeartList.put(dnInfo.key(),heart);
 			System.out.println("TpList puts a dnInfo:"+dnInfo.key());
 		}else{
-			blockStore.TpList.replace(dnInfo.key(),tp);
-			System.out.println("TpList replace:"+dnInfo.key()+":"+tp);
+			blockStore.HeartList.replace(dnInfo.key(),heart);
+			System.out.println("HeartList replace:"+dnInfo.key()+":"+heart);
 		}
        // TpList.replace(dnInfo.key(),tp);
-		System.out.println("TpList:"+blockStore.TpList);
+		System.out.println("TpList:"+blockStore.HeartList);
 		return RpcErrors.ERR_OK;
 	}
 

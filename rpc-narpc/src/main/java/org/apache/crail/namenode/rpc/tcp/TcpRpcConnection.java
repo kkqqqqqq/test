@@ -26,6 +26,7 @@ import org.apache.crail.metadata.BlockInfo;
 import org.apache.crail.metadata.DataNodeInfo;
 import org.apache.crail.metadata.FileInfo;
 import org.apache.crail.metadata.FileName;
+import org.apache.crail.metadata.HeartbeatResult;
 import org.apache.crail.rpc.*;
 import org.apache.crail.utils.CrailUtils;
 import org.slf4j.Logger;
@@ -202,8 +203,8 @@ public class TcpRpcConnection implements RpcConnection {
 
 
 
-	public RpcFuture<RPCHeartbeat> heartbeat(DataNodeInfo dataNodeInfo,int tp) throws Exception {
-		RpcRequestMessage.HeartbeatReq req = new RpcRequestMessage.HeartbeatReq(dataNodeInfo,tp);
+	public RpcFuture<RPCHeartbeat> heartbeat(DataNodeInfo dataNodeInfo,HeartbeatResult heart) throws Exception {
+		RpcRequestMessage.HeartbeatReq req = new RpcRequestMessage.HeartbeatReq(dataNodeInfo,heart);
 		RpcResponseMessage.HeartbeatRes resp = new RpcResponseMessage.HeartbeatRes();
 
 		TcpNameNodeRequest request = new TcpNameNodeRequest(req);

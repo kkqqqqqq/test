@@ -38,6 +38,7 @@ import org.apache.crail.conf.CrailConstants;
 import org.apache.crail.metadata.DataNodeInfo;
 import org.apache.crail.metadata.DataNodeStatistics;
 import org.apache.crail.metadata.DataNodeStatus;
+import org.apache.crail.metadata.HeartbeatResult;
 import org.apache.crail.rpc.RpcClient;
 import org.apache.crail.rpc.RpcConnection;
 import org.apache.crail.rpc.RpcDispatcher;
@@ -207,12 +208,13 @@ public interface StorageServer extends Configurable, Runnable  {
 		}
 
 		while (server.isAlive()) {
-			int test=0;
-			//NetUsage tp=new NetUsage();
-			//int tpuse=  tp.get();
+			//int test=0;
+			HeartUsage heartUsage =new HeartUsage();
+			HeartbeatResult heart=  heartUsage.get();
 			//LOG.info("tpuse:"+tpuse);
-			rpcConnection.heartbeat(dnInfo,test);
-			test++;
+			//rpcConnection.heartbeat(dnInfo,test);
+			rpcConnection.heartbeat(dnInfo,heart);
+			//test++;
 			DataNodeStatistics stats = storageRpc.getDataNode();
 			long newCount = stats.getFreeBlockCount();
 			long serviceId = stats.getServiceId();
@@ -249,27 +251,34 @@ public interface StorageServer extends Configurable, Runnable  {
 	}
 
 }
- class NetUsage{
+ class HeartUsage{
 
 	Logger LOG = CrailUtils.getLogger();
-	private static NetUsage INSTANCE = new NetUsage();
+	private static HeartUsage INSTANCE = new HeartUsage();
 	private final static float TotalBandwidth = 5000;
-	NetUsage(){}
-	public static NetUsage getInstance(){
+	 HeartUsage(){}
+	public static HeartUsage getInstance(){
 		return INSTANCE;
 	}
-	public int get() {
+	public HeartbeatResult get() {
 		// LOG.info("begin get tp");
 
 		int netUsage = 0;
-		Process pro1,pro2;
+		int cpuUsage = 0;
+		Process pro1,pro2,pro3,pro4;
 		Runtime r = Runtime.getRuntime();
 		try {
-			String command = "cat /proc/net/dev";
+			String command1 = "cat /proc/net/dev";
+			long tpstartTime = System.currentTimeMillis();
+			pro1 = r.exec(command1);
 
-			long startTime = System.currentTimeMillis();
-			pro1 = r.exec(command);
+			String command2 = "cat /proc/stat";
+			long cpustartTime = System.currentTimeMillis();
+			pro3 = r.exec(command2);
+
 			BufferedReader in1 = new BufferedReader(new InputStreamReader(pro1.getInputStream()));
+			BufferedReader in3 = new BufferedReader(new InputStreamReader(pro3.getInputStream()));
+
 			String line = null;
 			long inSize1 = 0, outSize1 = 0;
 			while((line=in1.readLine()) != null){
@@ -294,8 +303,31 @@ public interface StorageServer extends Configurable, Runnable  {
 				System.out.println("NetUsage  InterruptedException. " + e.getMessage());
 				System.out.println(sw.toString());
 			}
-			long endTime = System.currentTimeMillis();
-			pro2 = r.exec(command);
+
+			String line2 = null;
+			long idleCpuTime1 = 0, totalCpuTime1 = 0;
+			while((line=in1.readLine()) != null){
+				if(line.startsWith("cpu")){
+					line = line.trim();
+					String[] temp = line.split("\\s+");
+					idleCpuTime1 = Long.parseLong(temp[4]);
+					for(String s : temp){
+						if(!s.equals("cpu")){
+							totalCpuTime1 += Long.parseLong(s);
+						}
+					}
+					LOG.info("IdleCpuTime: " + idleCpuTime1+ ", " + "TotalCpuTime" + totalCpuTime1);
+					break;
+				}
+			}
+			in1.close();
+			pro1.destroy();
+			in3.close();
+			pro3.destroy();
+
+
+			long tpendTime = System.currentTimeMillis();
+			pro2 = r.exec(command1);
 			BufferedReader in2 = new BufferedReader(new InputStreamReader(pro2.getInputStream()));
 			long inSize2 = 0 ,outSize2 = 0;
 			while((line=in2.readLine()) != null){
@@ -309,25 +341,66 @@ public interface StorageServer extends Configurable, Runnable  {
 					break;
 				}
 			}
+
 			if(inSize1 != 0 && outSize1 !=0 && inSize2 != 0 && outSize2 !=0){
-				float interval = (float)(endTime - startTime)/1000;
+				float interval = (float)(tpendTime - tpstartTime)/1000;
 
 				float curRate = (float)(inSize2 - inSize1 + outSize2 - outSize1)*8/(1000000*interval);
 				netUsage = (int)( 100-100*curRate/TotalBandwidth);
-				//System.out.println("this node " + curRate + "Mbps");
-			    //System.out.println("usage " + netUsage);
+
+
 			}
 			in2.close();
 			pro2.destroy();
+
+
+			long cpuendTime = System.currentTimeMillis();
+			pro4 = r.exec(command2);
+			BufferedReader in4 = new BufferedReader(new InputStreamReader(pro4.getInputStream()));
+			long idleCpuTime2 = 0, totalCpuTime2 = 0;
+			while((line=in4.readLine()) != null){
+				if(line.startsWith("cpu")){
+					line = line.trim();
+					LOG.info(line);
+					String[] temp = line.split("\\s+");
+					idleCpuTime2 = Long.parseLong(temp[4]);
+					for(String s : temp){
+						if(!s.equals("cpu")){
+							totalCpuTime2 += Long.parseLong(s);
+						}
+					}
+					LOG.info("IdleCpuTime: " + idleCpuTime2 + ", " + "TotalCpuTime" + totalCpuTime2);
+					break;
+				}
+			}
+
+
+
+			if(idleCpuTime1 != 0 && totalCpuTime1 !=0 && idleCpuTime2 != 0 && totalCpuTime2 !=0){
+				cpuUsage = (int)(100 - 100*(idleCpuTime2 - idleCpuTime1)/(float)(totalCpuTime2 - totalCpuTime1));
+				LOG.info("this node cpu usage: " + cpuUsage);
+			}
+			in2.close();
+			pro2.destroy();
+
+	in4.close();
+			pro4.destroy();
+
+
 		} catch (IOException e) {
 			StringWriter sw = new StringWriter();
 			e.printStackTrace(new PrintWriter(sw));
 			System.out.println("NetUsage  InstantiationException. " + e.getMessage());
 			System.out.println(sw.toString());
 		}
-		return netUsage;
+		HeartbeatResult heart=new HeartbeatResult(cpuUsage,netUsage);
+		return heart;
 	}
+
+
+
 }
+
 
 
 

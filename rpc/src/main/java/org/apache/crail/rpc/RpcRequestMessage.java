@@ -28,6 +28,8 @@ import org.apache.crail.metadata.BlockInfo;
 import org.apache.crail.metadata.DataNodeInfo;
 import org.apache.crail.metadata.FileInfo;
 import org.apache.crail.metadata.FileName;
+import org.apache.crail.metadata.HeartbeatResult;
+
 
 public class RpcRequestMessage {
 	public static class CreateFileReq implements RpcProtocol.NameNodeRpcMessage {
@@ -697,15 +699,15 @@ public class RpcRequestMessage {
 
     public static class HeartbeatReq implements RpcProtocol.NameNodeRpcMessage {
 		protected DataNodeInfo dnInfo;
-		public int tp;
-		public static int CSIZE = DataNodeInfo.CSIZE+Integer.BYTES;
-
+		public static int CSIZE = DataNodeInfo.CSIZE+HeartbeatResult.CSIZE;
+        HeartbeatResult heart;
 		public HeartbeatReq() {
 			this.dnInfo = new DataNodeInfo();
-			this.tp = 0;}
-		public HeartbeatReq(DataNodeInfo dnInfo, int tp) {
+			//	this.tp = 0;
+				}
+		public HeartbeatReq(DataNodeInfo dnInfo, HeartbeatResult heart) {
 			this.dnInfo=dnInfo;
-			this.tp = tp;
+			this.heart = heart;
 		}
 		@Override
 		public short getType() {
@@ -714,18 +716,19 @@ public class RpcRequestMessage {
 
 		@Override
 		public int gettp() {
-			return tp;
+			return 0;
 		}
 
+
 		public int size() {
-			return DataNodeInfo.CSIZE+Integer.BYTES;
+			return DataNodeInfo.CSIZE+HeartbeatResult.CSIZE;
 		}
 
 		public int write(ByteBuffer buffer) throws IOException {
 			int size = size();
 			checkSize(buffer.remaining());
 			dnInfo.write(buffer);
-			buffer.putInt(this.tp);
+			heart.update(buffer);
 			return size;
 		}
 		private void checkSize(int remaining) throws IOException {
@@ -737,10 +740,13 @@ public class RpcRequestMessage {
 		public void update(ByteBuffer buffer) throws IOException {
 			checkSize(buffer.remaining());
 			dnInfo.update(buffer);
-			this.tp = buffer.getInt();
+			heart.update(buffer);
 		}
 		public DataNodeInfo getInfo(){
 			return this.dnInfo;
+		}
+		public HeartbeatResult getHeart(){
+			return heart;
 		}
 	}
 }

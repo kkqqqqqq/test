@@ -70,11 +70,6 @@ public class DataNodeBlocks extends DataNodeInfo {
 		updateBlockCount();
 	}
 
-	public double getThroughput(DataNodeInfo dnInfo){
-		double throughput=0.0;
-
-		return  throughput;
-	}
 
 
 	public NameNodeBlockInfo getFreeBlock() throws InterruptedException {

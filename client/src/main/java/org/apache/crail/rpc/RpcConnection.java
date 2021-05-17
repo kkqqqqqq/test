@@ -26,6 +26,8 @@ import org.apache.crail.metadata.BlockInfo;
 import org.apache.crail.metadata.DataNodeInfo;
 import org.apache.crail.metadata.FileInfo;
 import org.apache.crail.metadata.FileName;
+import org.apache.crail.metadata.HeartbeatResult;
+
 
 public interface RpcConnection {
 	public abstract RpcFuture<RpcCreateFile> createFile(
@@ -65,7 +67,7 @@ public interface RpcConnection {
 			InetAddress ipaddr, int port) throws Exception;
 
 	public abstract RpcFuture<RPCHeartbeat> heartbeat(
-			DataNodeInfo dnInfo,int tp) throws Exception;
+			DataNodeInfo dnInfo,HeartbeatResult heart) throws Exception;
 
 	public abstract void close() throws Exception;
 
