@@ -546,8 +546,6 @@ class StorageClass  {
 						w[2]+=0.1;w[0]-=0.05;w[1]-=0.05;
 				}
 
-
-
 				LOG.info("cap_variance:"+cap_variance+"through_variance:"+through_variance+"cpu_variance"+cpu_variance);
 				LOG.info("w:"+w);
 				//tp
