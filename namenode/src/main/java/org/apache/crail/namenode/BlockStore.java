@@ -542,8 +542,8 @@ class StorageClass  {
 					}
 
 				}else if(through_variance>=cpu_variance){
-					if(w[3]<=0.6){
-						w[3]+=0.1;w[0]-=0.05;w[1]-=0.05;
+					if(w[2]<=0.6){
+						w[2]+=0.1;w[0]-=0.05;w[1]-=0.05;
 				}
 
 
