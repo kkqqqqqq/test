@@ -10,8 +10,8 @@ public class HeartbeatResult {
     private static final Logger LOG = CrailUtils.getLogger();
     public static final int CSIZE = 8;
 
-    public int  cpuUsage=0;
-    public int  netUsage=0;
+    private int cpuUsage;
+    private int  netUsage;
     public HeartbeatResult(){
         this.cpuUsage = 0;
         this.netUsage = 0;

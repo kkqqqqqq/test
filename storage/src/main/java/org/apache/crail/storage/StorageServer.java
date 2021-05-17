@@ -140,8 +140,6 @@ public interface StorageServer extends Configurable, Runnable  {
 		server.init(conf, extraParams);
 		server.printConf(LOG);
 
-
-
 		Thread thread = new Thread(server);
 		thread.start();
 
@@ -151,7 +149,6 @@ public interface StorageServer extends Configurable, Runnable  {
 		rpcClient.printConf(LOG);					
 		
 		ConcurrentLinkedQueue<InetSocketAddress> namenodeList = CrailUtils.getNameNodeList();
-
 
 		ConcurrentLinkedQueue<RpcConnection> connectionList = new ConcurrentLinkedQueue<RpcConnection>();
 		while(!namenodeList.isEmpty()){
@@ -214,6 +211,8 @@ public interface StorageServer extends Configurable, Runnable  {
 			//LOG.info("tpuse:"+tpuse);
 			//rpcConnection.heartbeat(dnInfo,test);
 			HeartbeatResult test=new HeartbeatResult(10,10);
+			LOG.info("test heart:"+test);
+			LOG.info("test heart:"+test.getCpuUsage()+test.getCpuUsage());
 			rpcConnection.heartbeat(dnInfo,test);
 			//test++;
 			DataNodeStatistics stats = storageRpc.getDataNode();

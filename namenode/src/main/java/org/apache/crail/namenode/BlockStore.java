@@ -210,7 +210,7 @@ class StorageClass  {
 	private DataNodeArray anySet;
 	private BlockSelection blockSelection;
 	private ConcurrentHashMap<Long, HeartbeatResult> HeartList = new ConcurrentHashMap<Long, HeartbeatResult>();
-	double w[]={1/3,1/3,1/3};
+	double[] w={1/3,1/3,1/3};
 	private Timer mytimer = new Timer();
 	private UpdateTimer updatetimer=new UpdateTimer();
 
@@ -456,17 +456,14 @@ class StorageClass  {
 	}
 
 	public class WeightBlockSelection implements BlockSelection {
-		double w[];
+		double[] w;
 		ArrayList<Integer> capacity = new ArrayList();
 		ArrayList<Integer> throughput = new ArrayList();
 		ArrayList<Integer> cpuuse = new ArrayList();
 		ArrayList<Double> WeightList = new ArrayList();
 		ArrayList<Double> probabilityList = new ArrayList();
 
-		public WeightBlockSelection( double w[]) {
-			//LOG.info("WeightBlockSelection 472: WeightRR block selection initialized");
-			//LOG.info("WeightBlockSelection 473: membership" + membership);
-			//LOG.info("TPlist" + TpList);
+		public WeightBlockSelection( double[] w) {
 			this.w=w;
 		}
 
@@ -499,10 +496,12 @@ class StorageClass  {
 					capa_sum += cap;
 
 					tp=HeartList.get(datanode.key()).getNetUsage();
+					LOG.info("update tp"+tp);
 					throughput.add(tp);
 					through_sum =through_sum+tp;
 
 					cpu=HeartList.get(datanode.key()).getCpuUsage();
+					LOG.info("update cpu"+cpu);
 					cpuuse.add(cpu);
 					cpu_sum += cpu;
 
@@ -518,7 +517,7 @@ class StorageClass  {
 						probabilityList.set(i,probabilityList.get(i-1)+(WeightList.get(i))/ sum);
 					}
 				}
-				//compute variance and modify k
+				//compute variance and modify w[]
 				mean1=capa_sum/membership.size();
 				mean2=through_sum/membership.size();
 				mean3=cpu_sum/membership.size();
@@ -527,6 +526,8 @@ class StorageClass  {
 					through_variance += Math.pow((throughput.get(i)-mean2),2);
 					cpu_variance += Math.pow((cpuuse.get(i)-mean3),2);
 				}
+
+				LOG.info("cap_variance:"+cap_variance+"through_variance:"+through_variance+"cpu_variance"+cpu_variance);
 
 				if(cap_variance>through_variance){
 					if(through_variance>=cpu_variance){
@@ -546,9 +547,9 @@ class StorageClass  {
 						w[2]+=0.1;w[0]-=0.05;w[1]-=0.05;
 				}
 
-				LOG.info("cap_variance:"+cap_variance+"through_variance:"+through_variance+"cpu_variance"+cpu_variance);
-				LOG.info("w:"+w);
-				//tp
+
+				LOG.info("w:"+w[0]+" "+w[1]+" "+w[2]);
+
 
 			}else{
 				LOG.info("first add datanode");
