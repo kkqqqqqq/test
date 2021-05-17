@@ -465,6 +465,7 @@ class StorageClass  {
 
 		public WeightBlockSelection( double[] w) {
 			this.w=w;
+			LOG.info("w:"+w[0]+" "+w[1]+" "+w[2]);
 		}
 
 
@@ -511,7 +512,6 @@ class StorageClass  {
 					sum += temp;
 				}
 				for (int i = 0; i < membership.size(); i++) {
-
 					if(i==0) {probabilityList.set(i,(WeightList.get(i))/ sum);}
 					else{
 						probabilityList.set(i,probabilityList.get(i-1)+(WeightList.get(i))/ sum);
@@ -521,6 +521,7 @@ class StorageClass  {
 				mean1=capa_sum/membership.size();
 				mean2=through_sum/membership.size();
 				mean3=cpu_sum/membership.size();
+				LOG.info("means:"+mean1+mean2+mean3);
 				for (int i = 0; i < membership.size(); i++) {
 					cap_variance += Math.pow((capacity.get(i)-mean1),2);
 					through_variance += Math.pow((throughput.get(i)-mean2),2);
