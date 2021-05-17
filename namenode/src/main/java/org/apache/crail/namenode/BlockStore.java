@@ -535,14 +535,14 @@ class StorageClass  {
 
 				if(cap_variance>through_variance){
 					if(through_variance>=cpu_variance){
-						if(w[0]<=0.6){ w[0]+=0.1;w[1]-=0.05;w[2]-=0.05;}
+						if(w[0]<=0.6&&w[1]>0.3&&w[2]>0.3){ w[0]+=0.1;w[1]-=0.05;w[2]-=0.05;}
 					}
 					else if(cap_variance<cpu_variance){
-							if(w[1]<=0.6){w[1]+=0.1;w[0]-=0.05;w[2]-=0.05; }
+							if(w[0]<=0.6&&w[1]>0.3&&w[2]>0.3){w[1]+=0.1;w[0]-=0.05;w[2]-=0.05; }
 					}
 				}
 				else if(through_variance>=cpu_variance) {
-					if (w[2] <= 0.6) {
+					if (w[0]<=0.6&&w[1]>0.3&&w[2]>0.3) {
 						w[2] += 0.1;
 						w[0] -= 0.05;
 						w[1] -= 0.05;
