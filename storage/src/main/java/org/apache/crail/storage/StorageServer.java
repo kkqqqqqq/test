@@ -18,6 +18,7 @@
 
 package org.apache.crail.storage;
 
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -44,13 +45,6 @@ import org.apache.crail.rpc.RpcConnection;
 import org.apache.crail.rpc.RpcDispatcher;
 import org.apache.crail.utils.CrailUtils;
 import org.slf4j.Logger;
-
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 
 public interface StorageServer extends Configurable, Runnable  {
@@ -204,13 +198,18 @@ public interface StorageServer extends Configurable, Runnable  {
 			}
 		}
 
+
+
+
 		while (server.isAlive()) {
-			//int test=0;
+			int testtime=0;
 			HeartUsage heartUsage =new HeartUsage();
 			long heartstartTime = System.currentTimeMillis();
 			HeartbeatResult heart=  heartUsage.get();
 			long heartendTime = System.currentTimeMillis();
 			long hearttime=heartendTime-heartstartTime;
+			LOG.info("time of heart computing: "+hearttime);
+			testtime++;
 			LOG.info("time of heart computing: "+hearttime);
 			//rpcConnection.heartbeat(dnInfo,test);
 			HeartbeatResult test=new HeartbeatResult(10,10);
