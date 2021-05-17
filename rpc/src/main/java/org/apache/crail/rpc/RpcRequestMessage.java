@@ -703,6 +703,7 @@ public class RpcRequestMessage {
         HeartbeatResult heart;
 		public HeartbeatReq() {
 			this.dnInfo = new DataNodeInfo();
+			this.heart=new HeartbeatResult();
 			//	this.tp = 0;
 				}
 		public HeartbeatReq(DataNodeInfo dnInfo, HeartbeatResult heart) {
@@ -742,10 +743,9 @@ public class RpcRequestMessage {
 		public void update(ByteBuffer buffer) throws IOException {
 			checkSize(buffer.remaining());
 			dnInfo.update(buffer);
-			System.out.println("dnInfo.update(buffer) suscceed ");
 			heart.update(buffer);
-			//heart.cpuUsage=buffer.getInt();
-			//heart.netUsage=buffer.getInt();
+
+
 		}
 		public DataNodeInfo getInfo(){
 			return this.dnInfo;
