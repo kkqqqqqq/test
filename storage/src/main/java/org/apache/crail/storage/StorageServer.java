@@ -206,9 +206,10 @@ public interface StorageServer extends Configurable, Runnable  {
 			//long hearttime=heartendTime-heartstartTime;
 			//LOG.info("time of heart computing: "+hearttime);
 			rpcConnection.heartbeat(dnInfo,heart);
-
+			LOG.info("heart: " +heart.getCpuUsage()+" "+heart.getNetUsage());
 
 			DataNodeStatistics stats = storageRpc.getDataNode();
+			LOG.info("DataNodeStatistics stats = storageRpc.getDataNode();" + stats);
 			long newCount = stats.getFreeBlockCount();
 			long serviceId = stats.getServiceId();
 			short status = stats.getStatus().getStatus();
@@ -353,7 +354,7 @@ public interface StorageServer extends Configurable, Runnable  {
 							totalCpuTime2 += Long.parseLong(s);
 						}
 					}
-					//LOG.info("IdleCpuTime: " + idleCpuTime2 + ", " + "TotalCpuTime" + totalCpuTime2);
+					LOG.info("IdleCpuTime: " + idleCpuTime2 + ", " + "TotalCpuTime" + totalCpuTime2);
 					break;
 				}
 			}
