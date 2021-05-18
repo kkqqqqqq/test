@@ -620,13 +620,9 @@ public class NameNodeService implements RpcNameNodeService, Sequencer {
 		System.out.println("recieved a heartbeat  ="+heart);
 		if(!blockStore.HeartList.containsKey(dnInfo.key())){
 			blockStore.HeartList.put(dnInfo.key(),heart);
-			System.out.println("TpList puts a dnInfo:"+dnInfo.key());
 		}else{
 			blockStore.HeartList.replace(dnInfo.key(),heart);
-			System.out.println("HeartList replace:"+dnInfo.key()+":"+heart);
 		}
-       // TpList.replace(dnInfo.key(),tp);
-		System.out.println("TpList:"+blockStore.HeartList);
 		return RpcErrors.ERR_OK;
 	}
 

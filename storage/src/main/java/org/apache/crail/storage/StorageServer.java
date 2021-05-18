@@ -162,11 +162,8 @@ public interface StorageServer extends Configurable, Runnable  {
 		//storage rpc
 		StorageRpcClient storageRpc = new StorageRpcClient(storageType, CrailStorageClass.get(storageClass), server.getAddress(), rpcConnection);
 		DataNodeInfo dnInfo=storageRpc.getdnInfo();
-		LOG.info("dnInfo " + dnInfo);
-
-		LOG.info("rpcclient.hashcode " + rpcClient.hashCode());
-
-
+		//LOG.info("dnInfo " + dnInfo);
+		//LOG.info("rpcclient.hashcode " + rpcClient.hashCode());
 
 		HashMap<Long, Long> blockCount = new HashMap<Long, Long>();
 		long sumCount = 0;
@@ -202,26 +199,19 @@ public interface StorageServer extends Configurable, Runnable  {
 
 
 		while (server.isAlive()) {
-			int testtime=0;
 			HeartUsage heartUsage =new HeartUsage();
-			long heartstartTime = System.currentTimeMillis();
+			//long heartstartTime = System.currentTimeMillis();
 			HeartbeatResult heart=  heartUsage.get();
-			long heartendTime = System.currentTimeMillis();
-			long hearttime=heartendTime-heartstartTime;
-			LOG.info("time of heart computing: "+hearttime);
-			testtime++;
-			LOG.info("time of heart computing: "+hearttime);
-			//rpcConnection.heartbeat(dnInfo,test);
-			HeartbeatResult test=new HeartbeatResult(10,10);
-			//LOG.info("test heart:"+test);
-			//LOG.info("test heart:"+test.getCpuUsage()+test.getCpuUsage());
-			rpcConnection.heartbeat(dnInfo,test);
-			//test++;
+			//long heartendTime = System.currentTimeMillis();
+			//long hearttime=heartendTime-heartstartTime;
+			//LOG.info("time of heart computing: "+hearttime);
+			rpcConnection.heartbeat(dnInfo,heart);
+
+
 			DataNodeStatistics stats = storageRpc.getDataNode();
 			long newCount = stats.getFreeBlockCount();
 			long serviceId = stats.getServiceId();
 			short status = stats.getStatus().getStatus();
-
 			long oldCount = 0;
 			if (blockCount.containsKey(serviceId)){
 				oldCount = blockCount.get(serviceId);
@@ -229,10 +219,9 @@ public interface StorageServer extends Configurable, Runnable  {
 			long diffCount = newCount - oldCount;
 			blockCount.put(serviceId, newCount);
 			sumCount += diffCount;
-
 			LOG.info("datanode statistics, freeBlocks " + sumCount);
 			processStatus(server, rpcConnection, thread, status);
-			//Thread.sleep(CrailConstants.STORAGE_KEEPALIVE*1000);
+			Thread.sleep(CrailConstants.STORAGE_KEEPALIVE*1000);
 
 		}
 	}
@@ -298,7 +287,7 @@ public interface StorageServer extends Configurable, Runnable  {
 				if(cpu_line.startsWith("cpu")){
 					cpu_line = cpu_line.trim();
 					String[] temp = cpu_line.split("\\s+");
-					idleCpuTime1 = Long.parseLong(temp[5]);
+					idleCpuTime1 = Long.parseLong(temp[4]);
 					for(String s : temp){
 						if(!s.equals("cpu")){
 							totalCpuTime1 += Long.parseLong(s);
