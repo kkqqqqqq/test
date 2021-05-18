@@ -209,13 +209,14 @@ public interface StorageServer extends Configurable, Runnable  {
 			LOG.info("heart: " +heart.getCpuUsage()+" "+heart.getNetUsage());
 
 			DataNodeStatistics stats = storageRpc.getDataNode();
-			LOG.info("DataNodeStatistics stats = storageRpc.getDataNode();" + stats);
+			LOG.info("DataNodeStatistics stats = storageRpc.getDataNode();" + stats.getFreeBlockCount());
 			long newCount = stats.getFreeBlockCount();
 			long serviceId = stats.getServiceId();
 			short status = stats.getStatus().getStatus();
 			long oldCount = 0;
 			if (blockCount.containsKey(serviceId)){
 				oldCount = blockCount.get(serviceId);
+				LOG.info("oldCount = blockCount.get(serviceId);" + oldCount);
 			}
 			long diffCount = newCount - oldCount;
 			blockCount.put(serviceId, newCount);
