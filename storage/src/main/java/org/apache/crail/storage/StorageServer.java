@@ -349,7 +349,7 @@ public interface StorageServer extends Configurable, Runnable  {
 					cpu_line = cpu_line.trim();
 					LOG.info(cpu_line);
 					String[] temp = cpu_line.split("\\s+");
-					idleCpuTime2 = Long.parseLong(temp[5]);
+					idleCpuTime2 = Long.parseLong(temp[4]);
 					for(String s : temp){
 						if(!s.equals("cpu")){
 							totalCpuTime2 += Long.parseLong(s);
