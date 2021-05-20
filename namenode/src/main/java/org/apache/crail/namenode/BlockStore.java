@@ -457,6 +457,7 @@ class StorageClass  {
 
 	public class WeightBlockSelection implements BlockSelection {
 		double[] w;
+		double ran = Math.random();
 		ArrayList<Integer> capacity = new ArrayList();
 		ArrayList<Integer> throughput = new ArrayList();
 		ArrayList<Integer> cpuuse = new ArrayList();
@@ -554,7 +555,7 @@ class StorageClass  {
 
 		@Override
 		public int getNext(int size) {
-			double ran = Math.random();
+			ran = Math.random();
 			int pos = 0;
 			for (int i = 0; i < membership.size(); i++) {
 				if (ran > probabilityList.get(i)) {
