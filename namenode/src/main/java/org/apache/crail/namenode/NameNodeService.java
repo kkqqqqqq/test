@@ -617,7 +617,7 @@ public class NameNodeService implements RpcNameNodeService, Sequencer {
 	public short heartbeat(RpcRequestMessage.HeartbeatReq request, RpcResponseMessage.HeartbeatRes response, RpcNameNodeState errorState) throws Exception {
 		HeartbeatResult heart= request.getHeart();
 		DataNodeInfo dnInfo=request.getInfo();
-		System.out.println("recieved a heartbeat  ="+heart);
+		//System.out.println("recieved a heartbeat  ="+heart);
 		if(!blockStore.HeartList.containsKey(dnInfo.key())){
 			blockStore.HeartList.put(dnInfo.key(),heart);
 		}else{

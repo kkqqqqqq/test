@@ -55,22 +55,22 @@ public interface StorageServer extends Configurable, Runnable  {
 	public abstract void prepareToShutDown();
 	public abstract InetSocketAddress getAddress();
 
-	
+
 	public static void main(String[] args) throws Exception {
 		Logger LOG = CrailUtils.getLogger();
 		CrailConfiguration conf = CrailConfiguration.createConfigurationFromFile();
 		CrailConstants.updateConstants(conf);
 		CrailConstants.printConf();
 		CrailConstants.verify();
-		
+
 		int splitIndex = 0;
 		for (String param : args){
 			if (param.equalsIgnoreCase("--")){
 				break;
-			} 
+			}
 			splitIndex++;
 		}
-		
+
 		//default values
 		StringTokenizer tokenizer = new StringTokenizer(CrailConstants.STORAGE_TYPES, ",");
 		if (!tokenizer.hasMoreTokens()){
@@ -85,7 +85,7 @@ public interface StorageServer extends Configurable, Runnable  {
 			storageTypes.put(name, type);
 		}
 		int storageClass = -1;
-		
+
 
 		if (args != null) {
 			Option typeOption = Option.builder("t").desc("storage type to start").hasArg().build();
@@ -94,16 +94,16 @@ public interface StorageServer extends Configurable, Runnable  {
 			options.addOption(typeOption);
 			options.addOption(classOption);
 			CommandLineParser parser = new DefaultParser();
-			
+
 			try {
 				CommandLine line = parser.parse(options, Arrays.copyOfRange(args, 0, splitIndex));
 				if (line.hasOption(typeOption.getOpt())) {
 					storageName = line.getOptionValue(typeOption.getOpt());
 					storageType = storageTypes.get(storageName).intValue();
-				}				
+				}
 				if (line.hasOption(classOption.getOpt())) {
 					storageClass = Integer.parseInt(line.getOptionValue(classOption.getOpt()));
-				}					
+				}
 			} catch (ParseException e) {
 				HelpFormatter formatter = new HelpFormatter();
 				formatter.printHelp("Storage tier", options);
@@ -121,7 +121,7 @@ public interface StorageServer extends Configurable, Runnable  {
 
 		StorageServer server = storageTier.launchServer();
 
-		
+
 		String extraParams[] = null;
 		splitIndex++;
 		if (args.length > splitIndex){
@@ -140,8 +140,8 @@ public interface StorageServer extends Configurable, Runnable  {
 		RpcClient rpcClient = RpcClient.createInstance(CrailConstants.NAMENODE_RPC_TYPE);
 
 		rpcClient.init(conf, args);
-		rpcClient.printConf(LOG);					
-		
+		rpcClient.printConf(LOG);
+
 		ConcurrentLinkedQueue<InetSocketAddress> namenodeList = CrailUtils.getNameNodeList();
 
 		ConcurrentLinkedQueue<RpcConnection> connectionList = new ConcurrentLinkedQueue<RpcConnection>();
@@ -156,7 +156,7 @@ public interface StorageServer extends Configurable, Runnable  {
 		RpcConnection rpcConnection = connectionList.peek();
 		if (connectionList.size() > 1){
 			rpcConnection = new RpcDispatcher(connectionList);
-		}		
+		}
 		LOG.info("connected to namenode(s) " + rpcConnection.toString());
 
 		//storage rpc
@@ -195,22 +195,22 @@ public interface StorageServer extends Configurable, Runnable  {
 			}
 		}
 
-		final String sep = File.separator;
-		String filename = "ComputeHeartneatTime.txt";
-		File file = new File(sep + "home" + sep + "ubuntu" + sep + "crail" + sep + filename);
-		if (!file.exists()) {
-			file.createNewFile();
-		}
-		FileOutputStream fStream = new FileOutputStream(file, true);
+		//	final String sep = File.separator;
+		//	String filename = "ComputeHeartneatTime.txt";
+		//	File file = new File(sep + "home" + sep + "ubuntu" + sep + "crail" + sep + filename);
+		//	if (!file.exists()) {
+		//		file.createNewFile();
+		//	}
+		//	FileOutputStream fStream = new FileOutputStream(file, true);
 
 
 		while (server.isAlive()) {
 			HeartUsage heartUsage =new HeartUsage();
-			long heartstartTime = System.currentTimeMillis();
+			//long heartstartTime = System.currentTimeMillis();
 			HeartbeatResult heart=  heartUsage.get();
-			long heartendTime = System.currentTimeMillis();
-			long hearttime=heartendTime-heartstartTime;
-			fStream.write((hearttime + " ").getBytes());
+			//long heartendTime = System.currentTimeMillis();
+			//long hearttime=heartendTime-heartstartTime;
+			//fStream.write((hearttime + " ").getBytes());
 
 			rpcConnection.heartbeat(dnInfo,heart);
 			LOG.info("heart: " +heart.getCpuUsage()+" "+heart.getNetUsage());
@@ -230,7 +230,7 @@ public interface StorageServer extends Configurable, Runnable  {
 			sumCount += diffCount;
 			LOG.info("datanode statistics, freeBlocks " + sumCount);
 			processStatus(server, rpcConnection, thread, status);
-			Thread.sleep(CrailConstants.STORAGE_KEEPALIVE*1000);
+			//	Thread.sleep(CrailConstants.STORAGE_KEEPALIVE*1000);
 
 		}
 	}
@@ -251,12 +251,12 @@ public interface StorageServer extends Configurable, Runnable  {
 	}
 
 }
- class HeartUsage{
+class HeartUsage{
 
 	Logger LOG = CrailUtils.getLogger();
 	private static HeartUsage INSTANCE = new HeartUsage();
 	private final static float TotalBandwidth = 5000;
-	 HeartUsage(){}
+	HeartUsage(){}
 
 	public HeartbeatResult get() {
 		int netUsage = 0;
@@ -302,7 +302,7 @@ public interface StorageServer extends Configurable, Runnable  {
 							totalCpuTime1 += Long.parseLong(s);
 						}
 					}
-					LOG.info("IdleCpuTime: " + idleCpuTime1+ ", " + "TotalCpuTime" + totalCpuTime1);
+					//	LOG.info("IdleCpuTime: " + idleCpuTime1+ ", " + "TotalCpuTime" + totalCpuTime1);
 					break;
 				}
 			}
@@ -354,7 +354,7 @@ public interface StorageServer extends Configurable, Runnable  {
 			while((cpu_line=cpu_in2.readLine()) != null){
 				if(cpu_line.startsWith("cpu")){
 					cpu_line = cpu_line.trim();
-					LOG.info(cpu_line);
+					//	LOG.info(cpu_line);
 					String[] temp = cpu_line.split("\\s+");
 					idleCpuTime2 = Long.parseLong(temp[4]);
 					for(String s : temp){
@@ -362,7 +362,7 @@ public interface StorageServer extends Configurable, Runnable  {
 							totalCpuTime2 += Long.parseLong(s);
 						}
 					}
-					LOG.info("IdleCpuTime: " + idleCpuTime2 + ", " + "TotalCpuTime" + totalCpuTime2);
+					//	LOG.info("IdleCpuTime: " + idleCpuTime2 + ", " + "TotalCpuTime" + totalCpuTime2);
 					break;
 				}
 			}

@@ -498,12 +498,12 @@ class StorageClass  {
 					capa_sum += cap;
 
 					tp=HeartList.get(datanode.key()).getNetUsage();
-					LOG.info("update tp"+tp);
+					//LOG.info("update tp"+tp);
 					throughput.add(tp);
 					through_sum =through_sum+tp;
 
 					cpu=HeartList.get(datanode.key()).getCpuUsage();
-					LOG.info("update cpu"+cpu);
+					//LOG.info("update cpu"+cpu);
 					cpuuse.add(cpu);
 					cpu_sum += cpu;
 
@@ -522,17 +522,15 @@ class StorageClass  {
 				mean1=capa_sum/membership.size();
 				mean2=through_sum/membership.size();
 				mean3=cpu_sum/membership.size();
-				LOG.info("means:"+mean1+mean2+mean3);
+				//LOG.info("means:"+mean1+mean2+mean3);
 				for (int i = 0; i < membership.size(); i++) {
 					cap_variance += Math.pow((capacity.get(i)-mean1),2);
 
 					through_variance += Math.pow((throughput.get(i)-mean2),2);
-					LOG.info("cpu_variance:"+cpu_variance+"cpuuse.get(i)"+cpuuse.get(i)+"mean3"+mean3);
+					//LOG.info("cpu_variance:"+cpu_variance+"cpuuse.get(i)"+cpuuse.get(i)+"mean3"+mean3);
 					cpu_variance += Math.pow((cpuuse.get(i)-mean3),2);
 				}
-
-				LOG.info("cap_variance:"+cap_variance+"through_variance:"+through_variance+"cpu_variance"+cpu_variance);
-
+				//LOG.info("cap_variance:"+cap_variance+"through_variance:"+through_variance+"cpu_variance"+cpu_variance);
 				if(cap_variance>through_variance){
 					if(through_variance>=cpu_variance){
 						if(w[0]<=0.6&&w[1]>0.3&&w[2]>0.3){ w[0]+=0.1;w[1]-=0.05;w[2]-=0.05;}
@@ -548,10 +546,7 @@ class StorageClass  {
 						w[1] -= 0.05;
 					}
 				}
-
-				LOG.info("w:"+w[0]+" "+w[1]+" "+w[2]);
-
-
+				//LOG.info("w:"+w[0]+" "+w[1]+" "+w[2]);
 			}else{
 				LOG.info("first add datanode");
 			}
@@ -560,22 +555,15 @@ class StorageClass  {
 		@Override
 		public int getNext(int size) {
 			double ran = Math.random();
-			LOG.info("blockstore 526: the ran is"+ran);
 			int pos = 0;
-			LOG.info("blockstore 529:  membership.size():"+ membership.size());
 			for (int i = 0; i < membership.size(); i++) {
-
 				if (ran > probabilityList.get(i)) {
 					i++;pos++;
 				} else {
 					break;
 				}
 			}
-			//size = ThreadLocalRandom.current().nextInt(size);
-			//return size;
-			LOG.info("blockstore 539: the pos is "+pos+" and doInfo is: "+membership);
 			return size-pos;
-
 		}
 
 
@@ -617,21 +605,25 @@ class StorageClass  {
 			}
 			FileOutputStream fStream = new FileOutputStream(file, true);
 
-			LOG.info("membership" + membership);
+			//LOG.info("membership" + membership);
 			try {
 				NameNodeBlockInfo block = null;
 				int size = arrayList.size();
-				//LOG.info("arrayList." + arrayList);
-				//LOG.info("arrayList.size()=" + size);
+
 				if (size > 0) {
+					//----------------------------------
 					long startTime = System.nanoTime();
 					//----------------------------------
 					int startIndex = blockSelection.getNext(size);
+					//----------------------------------
+					long endTime = System.nanoTime();
+					long BlockSelectionTime = endTime - startTime;
+					fStream.write((BlockSelectionTime + " ").getBytes());
+					//----------------------------------
 					for (int i = 0; i < size; i++) {
 						int index = (startIndex + i) % size;
-
 						DataNodeBlocks anyDn = arrayList.get(index);
-						LOG.info(String.valueOf(index));
+						//LOG.info(String.valueOf(index));
 						if (anyDn.isOnline() && !anyDn.isScheduleForRemoval()) {
 							block = anyDn.getFreeBlock();
 						}
@@ -639,12 +631,7 @@ class StorageClass  {
 							break;
 						}
 					}
-					//----------------------------------
-					long endTime = System.nanoTime();
-					long BlockSelectionTime = endTime - startTime;
-					//LOG.info("round robin block selection time  "+BlockSelectionTime);
-					fStream.write((BlockSelectionTime + " ").getBytes());
-					//----------------------------------
+
 				}
 				return block;
 
