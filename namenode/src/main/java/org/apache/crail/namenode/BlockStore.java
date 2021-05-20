@@ -621,8 +621,8 @@ class StorageClass  {
 			try {
 				NameNodeBlockInfo block = null;
 				int size = arrayList.size();
-				LOG.info("arrayList." + arrayList);
-				LOG.info("arrayList.size()=" + size);
+				//LOG.info("arrayList." + arrayList);
+				//LOG.info("arrayList.size()=" + size);
 				if (size > 0) {
 					long startTime = System.nanoTime();
 					//----------------------------------

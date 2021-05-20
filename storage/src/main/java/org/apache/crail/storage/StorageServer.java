@@ -195,28 +195,35 @@ public interface StorageServer extends Configurable, Runnable  {
 			}
 		}
 
-
+		final String sep = File.separator;
+		String filename = "ComputeHeartneatTime.txt";
+		File file = new File(sep + "home" + sep + "ubuntu" + sep + "crail" + sep + filename);
+		if (!file.exists()) {
+			file.createNewFile();
+		}
+		FileOutputStream fStream = new FileOutputStream(file, true);
 
 
 		while (server.isAlive()) {
 			HeartUsage heartUsage =new HeartUsage();
-			//long heartstartTime = System.currentTimeMillis();
+			long heartstartTime = System.currentTimeMillis();
 			HeartbeatResult heart=  heartUsage.get();
-			//long heartendTime = System.currentTimeMillis();
-			//long hearttime=heartendTime-heartstartTime;
-			//LOG.info("time of heart computing: "+hearttime);
+			long heartendTime = System.currentTimeMillis();
+			long hearttime=heartendTime-heartstartTime;
+			fStream.write((hearttime + " ").getBytes());
+
 			rpcConnection.heartbeat(dnInfo,heart);
 			LOG.info("heart: " +heart.getCpuUsage()+" "+heart.getNetUsage());
 
 			DataNodeStatistics stats = storageRpc.getDataNode();
-			LOG.info("DataNodeStatistics stats = storageRpc.getDataNode(); newcount" + stats.getFreeBlockCount());
+			//LOG.info("DataNodeStatistics stats = storageRpc.getDataNode(); newcount" + stats.getFreeBlockCount());
 			long newCount = stats.getFreeBlockCount();
 			long serviceId = stats.getServiceId();
 			short status = stats.getStatus().getStatus();
 			long oldCount = 0;
 			if (blockCount.containsKey(serviceId)){
 				oldCount = blockCount.get(serviceId);
-				LOG.info("oldCount = blockCount.get(serviceId);" + oldCount);
+				//LOG.info("oldCount = blockCount.get(serviceId);" + oldCount);
 			}
 			long diffCount = newCount - oldCount;
 			blockCount.put(serviceId, newCount);
