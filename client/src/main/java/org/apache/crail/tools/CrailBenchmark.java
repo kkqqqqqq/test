@@ -185,6 +185,7 @@ public class CrailBenchmark {
 		}
 		long end = System.nanoTime();
 		double executionTimens = (double) (end - start) ;
+		System.out.println("start time " + start+" end time "+end +" executionTimens "+executionTimens);
 		double executionTimems=executionTimens/1000.0/1000.0;
 		double throughput = 0.0;
 		double latency = 0.0;
