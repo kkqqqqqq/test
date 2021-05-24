@@ -107,7 +107,7 @@ public class CrailBenchmark {
 		CrailFile file = fs.create(filename, CrailNodeType.DATAFILE, CrailStorageClass.get(storageClass), CrailLocationClass.get(locationClass), !skipDir).get().asFile();
 		CrailBufferedOutputStream bufferedStream = buffered ? file.getBufferedOutputStream(_capacity) : null;
 		CrailOutputStream directStream = !buffered ? file.getDirectOutputStream(_capacity) : null;
-		long start = System.currentTimeMillis();
+		long start = System.nanoTime();
 		while (ops < loop) {
 			buf.clear();
 			if (buffered){
@@ -121,17 +121,19 @@ public class CrailBenchmark {
 		if (buffered){
 			bufferedStream.close();
 		}
-		long end = System.currentTimeMillis();
-		double executionTime = ((double) (end - start)) / 1000.0;
+		long end = System.nanoTime();
+		double executionTimens = (double) (end - start) ;
+		System.out.println("start time " + start+" end time "+end +" executionTimens "+executionTimens);
+		double executionTimems=executionTimens/1000.0/1000.0;
 		double throughput = 0.0;
 		double latency = 0.0;
 		double sumbits = sumbytes * 8.0;
-		if (executionTime > 0) {
-			throughput = sumbits / executionTime / 1000.0 / 1000.0;
-			latency = 1000000.0 * executionTime / ops;
+		if (executionTimems > 0) {
+			throughput = sumbits / executionTimems / 1000.0 / 1000.0;
+			latency = 1000000.0 * executionTimems/ ops;
 		}
 
-		System.out.println("execution time " + executionTime);
+		System.out.println("execution time ns" + executionTimens);
 		System.out.println("ops " + ops);
 		System.out.println("sumbytes " + sumbytes);
 		System.out.println("throughput " + throughput);
@@ -1138,7 +1140,7 @@ public class CrailBenchmark {
 			benchmark.close();
 		} else if (type.equals("writekey")){
 			benchmark.open();
-			benchmark.write(filename, size, loop, storageClass, locationClass, useBuffered, skipDir);
+			benchmark.writekey(filename, size, loop, storageClass, locationClass, useBuffered, skipDir);
 			benchmark.close();
 		}else if (type.equalsIgnoreCase("writeAsync")) {
 			benchmark.open();
