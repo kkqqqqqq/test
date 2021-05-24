@@ -184,17 +184,17 @@ public class CrailBenchmark {
 			bufferedStream.close();
 		}
 		long end = System.nanoTime();
-		double executionTime = (double) (end - start) ;
-		executionTime=executionTime/1000.0;
+		double executionTimens = (double) (end - start) ;
+		double executionTimems=executionTimens/1000.0/1000.0;
 		double throughput = 0.0;
 		double latency = 0.0;
 		double sumbits = sumbytes * 8.0;
-		if (executionTime > 0) {
-			throughput = sumbits / executionTime / 1000.0 / 1000.0;
-			latency = 1000000.0 * executionTime/ ops;
+		if (executionTimems > 0) {
+			throughput = sumbits / executionTimems / 1000.0 / 1000.0;
+			latency = 1000000.0 * executionTimems/ ops;
 		}
 
-		System.out.println("execution time ns" + executionTime);
+		System.out.println("execution time ns" + executionTimens);
 		System.out.println("ops " + ops);
 		System.out.println("sumbytes " + sumbytes);
 		System.out.println("throughput " + throughput);
