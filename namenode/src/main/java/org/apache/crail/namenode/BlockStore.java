@@ -559,7 +559,7 @@ class StorageClass  {
 			int pos = 0;
 			for (int i = 0; i < membership.size(); i++) {
 				if (ran > probabilityList.get(i)) {
-					i++;pos++;
+					pos++;
 				} else {
 					break;
 				}
